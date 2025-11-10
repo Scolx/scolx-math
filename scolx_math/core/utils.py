@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, TypeVar
+from typing import ParamSpec, TypeVar
 
 from fastapi.concurrency import run_in_threadpool
 
 T = TypeVar("T")
+P = ParamSpec("P")
 
 # Global threadpool executor for CPU-bound operations
 # Using a smaller number of workers to avoid overhead for mathematical operations
@@ -30,19 +30,24 @@ def get_threadpool_executor() -> ThreadPoolExecutor:
     return _threadpool_executor
 
 
-def run_cpu_bound(func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+def run_cpu_bound(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
     """Execute a CPU-bound function in a threadpool."""
+    # For synchronous execution, directly use the threadpool executor
+    executor = get_threadpool_executor()
     if kwargs:
-        # If kwargs are provided, wrap in a lambda to avoid issues with run_in_threadpool
+
         def wrapper():
             return func(*args, **kwargs)
 
-        return asyncio.run(run_in_threadpool(wrapper))
+        future = executor.submit(wrapper)
     else:
-        return asyncio.run(run_in_threadpool(func, *args))
+        future = executor.submit(func, *args)
+    return future.result()
 
 
-async def run_cpu_bound_async(func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+async def run_cpu_bound_async(
+    func: Callable[P, T], *args: P.args, **kwargs: P.kwargs
+) -> T:
     """Execute a CPU-bound function in a threadpool asynchronously."""
     if kwargs:
         # If kwargs are provided, wrap in a lambda to avoid issues with run_in_threadpool

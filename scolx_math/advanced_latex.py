@@ -7,11 +7,42 @@ This module would handle:
 - More sophisticated step-by-step explanations
 """
 
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+
 import sympy as sp
 from sympy.parsing.latex import parse_latex
 
-# Note: The sympy.parsing.latex module is still experimental in some versions
-# Alternative approach would be to use latex2sympy library if needed
+from scolx_math.core.parsing import validate_variable_name
+
+_LATEX_SIMPLE_REPLACEMENTS: dict[str, str] = {
+    "\\,": "",
+    "\\!": "",
+    "\\;": "",
+    "\\:": "",
+    "\\tfrac": "\\frac",
+    "\\dfrac": "\\frac",
+    "\\cdot": "*",
+    "\\times": "*",
+    "\\div": "/",
+    "\\ln": "\\log",
+}
+
+_LATEX_REGEX_REPLACEMENTS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"\\left\s*"), ""),
+    (re.compile(r"\\right\s*"), ""),
+    (re.compile(r"\\mathrm\{\s*([A-Za-z])\s*\}"), r"\1"),
+    (re.compile(r"\\operatorname\{\s*([A-Za-z0-9_]+)\s*\}"), r"\1"),
+)
+
+
+@dataclass(frozen=True)
+class _ParsingAttemptError:
+    """Carry context about a failed LaTeX parsing attempt."""
+
+    message: str
 
 
 def parse_latex_expression(latex_expr: str) -> sp.Expr:
@@ -23,13 +54,74 @@ def parse_latex_expression(latex_expr: str) -> sp.Expr:
 
     Returns:
         A SymPy expression
+
+    Raises:
+        ValueError: If the LaTeX expression cannot be parsed safely
     """
-    try:
-        # Attempt to parse LaTeX using SymPy's experimental LaTeX parser
-        return parse_latex(latex_expr)
-    except Exception as e:
-        # If parsing fails, raise with more context
-        raise ValueError(f"Unable to parse LaTeX expression '{latex_expr}': {str(e)}")
+
+    if not latex_expr or not latex_expr.strip():
+        raise ValueError("LaTeX expression cannot be empty.")
+
+    if latex_expr.count("{") != latex_expr.count("}"):
+        raise ValueError("LaTeX expression has unmatched braces.")
+
+    attempts = []
+    seen: set[str] = set()
+    last_error: Exception | None = None
+
+    for candidate in _candidate_latex_inputs(latex_expr):
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        try:
+            expr = parse_latex(candidate)
+        except Exception as exc:  # pragma: no cover - defensive branch
+            last_error = exc
+            attempts.append(_ParsingAttemptError(str(exc)))
+            continue
+
+        _ensure_safe_symbols(expr)
+        return expr
+
+    base_message = "Unable to parse LaTeX expression."
+    if attempts:
+        details = " ".join(
+            f"Attempt {idx + 1} failed: {attempt.message}"
+            for idx, attempt in enumerate(attempts)
+        )
+        base_message = f"{base_message} {details}".strip()
+
+    if last_error is None:
+        raise ValueError(base_message)
+    raise ValueError(base_message) from last_error
+
+
+def _candidate_latex_inputs(original_expr: str) -> list[str]:
+    """Return sanitized LaTeX variants to improve parsing robustness."""
+
+    candidates = [original_expr.strip()]
+    normalized = _normalize_latex_expression(original_expr)
+    if normalized and normalized != candidates[0]:
+        candidates.append(normalized)
+    return [candidate for candidate in candidates if candidate]
+
+
+def _normalize_latex_expression(latex_expr: str) -> str:
+    """Normalize LaTeX syntax that frequently fails SymPy's parser."""
+
+    expr = latex_expr.strip()
+    for pattern, replacement in _LATEX_REGEX_REPLACEMENTS:
+        expr = pattern.sub(replacement, expr)
+    for source, target in _LATEX_SIMPLE_REPLACEMENTS.items():
+        expr = expr.replace(source, target)
+    return expr
+
+
+def _ensure_safe_symbols(expr: sp.Expr) -> None:
+    """Assert that parsed expressions only contain safe symbol names."""
+
+    for symbol in expr.free_symbols:
+        validate_variable_name(symbol.name)
 
 
 def integrate_latex_with_steps(latex_expr: str, var_name: str) -> tuple[str, list[str]]:

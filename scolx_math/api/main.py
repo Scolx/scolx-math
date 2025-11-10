@@ -1,5 +1,6 @@
 """Main API module for the Scolx Math API."""
 
+from contextlib import asynccontextmanager
 from enum import Enum
 from typing import Any
 
@@ -50,7 +51,15 @@ class OperationType(str, Enum):
     SERIES_LATEX = "series_latex"
 
 
-app = FastAPI(title="Scolx Math API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan event handler for application startup and shutdown."""
+    yield  # Application startup
+    # Application shutdown
+    cleanup_threadpool()
+
+
+app = FastAPI(title="Scolx Math API", lifespan=lifespan)
 
 
 @app.exception_handler(RequestValidationError)
@@ -115,7 +124,7 @@ class MathRequest(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def _validate_combinations(self) -> "MathRequest":
+    def _validate_combinations(self) -> MathRequest:
         """Validate field combinations based on operation type."""
         op_value = self.type.value
         if op_value in LATEX_TYPES and not self.is_latex:
@@ -210,9 +219,3 @@ async def solve_math(req: MathRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error.",
         ) from exc
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Clean up resources on application shutdown."""
-    cleanup_threadpool()

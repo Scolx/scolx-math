@@ -16,7 +16,7 @@
 - ✅ Proper error handling and validation for all operations
 
 ## Planned Features
-- 🔲 Enhanced LaTeX parsing with more comprehensive support
+- ✅ Enhanced LaTeX parsing with more comprehensive support
 - 🔲 Support for multivariate calculus
 - 🔲 Matrix and linear algebra operations
 - 🔲 Plotting and visualization capabilities

@@ -23,6 +23,40 @@ def test_latex_integration():
     data = response.json()
     assert "result" in data
     assert "steps" in data
+
+
+def test_latex_normalization_handles_left_right():
+    """Expressions with left/right should be normalized before parsing."""
+    response = client.post(
+        "/solve",
+        json={
+            "type": "derivative_latex",
+            "expression": "\\left( x^2 + 1 \\right)",
+            "variable": "x",
+            "steps": False,
+            "is_latex": True,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == "2*x"
+
+
+def test_latex_unmatched_braces_returns_error():
+    """Invalid LaTeX inputs should return a validation error."""
+    response = client.post(
+        "/solve",
+        json={
+            "type": "integral_latex",
+            "expression": "\\frac{1}{x",
+            "variable": "x",
+            "steps": False,
+            "is_latex": True,
+        },
+    )
+    assert response.status_code == 400
+    data = response.json()
+    assert "LaTeX expression has unmatched braces." in data["detail"]
     # The result should be equivalent to x^3/3 (though possibly in different form)
 
 

@@ -39,7 +39,7 @@ _SAFE_LOCALS: dict[str, sp.Function | sp.Basic] = {
 }
 _SYMBOL_PATTERN = re.compile(r"^[A-Za-z]\w*$")
 
-__all__ = ["parse_plain_expression", "validate_variable_name"]
+__all__ = ["parse_plain_expression", "validate_variable_name", "get_safe_locals"]
 
 
 def validate_variable_name(name: str) -> str:
@@ -82,3 +82,9 @@ def parse_plain_expression(
 
     _ensure_safe_symbols(expr)
     return expr
+
+
+def get_safe_locals() -> dict[str, sp.Function | sp.Basic]:
+    """Return a copy of the safe locals dictionary for SymPy sympification."""
+
+    return dict(_SAFE_LOCALS)

@@ -112,6 +112,77 @@ def test_solve_endpoint_hessian():
     assert data["steps"] == []
 
 
+def test_matrix_determinant_endpoint():
+    response = _post(
+        {
+            "type": "matrix_determinant",
+            "matrix": [[1, 2], [3, 4]],
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == "-2"
+    assert data["steps"] == []
+
+
+def test_matrix_inverse_endpoint():
+    response = _post(
+        {
+            "type": "matrix_inverse",
+            "matrix": [[1, 2], [3, 4]],
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == [["-2", "1"], ["3/2", "-1/2"]]
+
+
+def test_matrix_multiply_endpoint():
+    response = _post(
+        {
+            "type": "matrix_multiply",
+            "left_matrix": [[1, 2], [3, 4]],
+            "right_matrix": [[5, 6], [7, 8]],
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == [["19", "22"], ["43", "50"]]
+
+
+def test_plot_endpoint():
+    response = _post(
+        {
+            "type": "plot",
+            "expression": "x**2",
+            "variable": "x",
+            "plot_range": ["0", "2"],
+            "samples": 5,
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "points" in data
+    assert len(data["points"]) == 5
+    assert data["points"][0]["x"] == 0.0
+    assert data["points"][0]["y"] == 0.0
+
+
+def test_ode_endpoint_with_initial_condition():
+    response = _post(
+        {
+            "type": "ode",
+            "expression": "Eq(diff(y(x), x), y(x))",
+            "variable": "x",
+            "function": "y",
+            "initial_conditions": {"y(0)": "1"},
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "exp(x)" in data["result"]
+
+
 def test_solve_endpoint_invalid_type():
     """Unsupported operation should return 400."""
     response = _post(
@@ -239,3 +310,108 @@ def test_gradient_normalizes_single_variable_string():
     assert response.status_code == 200
     data = response.json()
     assert data["result"] == ["2*x"]
+
+
+def test_matrix_determinant_requires_matrix():
+    response = _post(
+        {
+            "type": "matrix_determinant",
+        }
+    )
+    assert response.status_code == 422
+    detail_messages = [entry["msg"] for entry in response.json()["detail"]]
+    assert any(
+        msg.endswith("Matrix input is required for this operation.")
+        for msg in detail_messages
+    )
+
+
+def test_matrix_multiply_requires_both_matrices():
+    response = _post(
+        {
+            "type": "matrix_multiply",
+            "left_matrix": [[1]],
+        }
+    )
+    assert response.status_code == 422
+    detail_messages = [entry["msg"] for entry in response.json()["detail"]]
+    assert any(
+        msg.endswith(
+            "Both left_matrix and right_matrix are required for matrix multiplication."
+        )
+        for msg in detail_messages
+    )
+
+
+def test_matrix_multiply_dimension_mismatch():
+    response = _post(
+        {
+            "type": "matrix_multiply",
+            "left_matrix": [[1, 2]],
+            "right_matrix": [[3, 4]],
+        }
+    )
+    assert response.status_code == 400
+    assert "incompatible" in response.json()["detail"]
+
+
+def test_plot_requires_range():
+    response = _post(
+        {
+            "type": "plot",
+            "expression": "x",
+            "variable": "x",
+        }
+    )
+    assert response.status_code == 422
+    detail_messages = [entry["msg"] for entry in response.json()["detail"]]
+    assert any(
+        msg.endswith("Plot range must be provided as [start, end].")
+        for msg in detail_messages
+    )
+
+
+def test_plot_requires_expression():
+    response = _post(
+        {
+            "type": "plot",
+            "variable": "x",
+            "plot_range": ["0", "1"],
+        }
+    )
+    assert response.status_code == 422
+    detail_messages = [entry["msg"] for entry in response.json()["detail"]]
+    assert any(
+        msg.endswith("Expression is required for the selected operation.")
+        for msg in detail_messages
+    )
+
+
+def test_ode_requires_function_variable_expression():
+    response = _post(
+        {
+            "type": "ode",
+            "expression": "Eq(diff(y(x), x), y(x))",
+        }
+    )
+    assert response.status_code == 422
+    detail_messages = [entry["msg"] for entry in response.json()["detail"]]
+    assert any(msg.endswith("ODE variable is required.") for msg in detail_messages)
+
+
+def test_ode_numeric_requires_range():
+    response = _post(
+        {
+            "type": "ode",
+            "expression": "Eq(diff(y(x), x), y(x)**2 + x)",
+            "variable": "x",
+            "function": "y",
+            "numeric": True,
+        }
+    )
+    assert response.status_code == 422
+    detail_messages = [entry["msg"] for entry in response.json()["detail"]]
+    assert any(
+        msg.endswith("Numeric ODE solving requires numeric_range to be provided.")
+        for msg in detail_messages
+    )

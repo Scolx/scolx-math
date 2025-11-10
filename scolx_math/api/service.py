@@ -13,13 +13,18 @@ from scolx_math.advanced_latex import (
 )
 from scolx_math.core.operations import (
     differentiate_expr,
+    generate_plot_points,
     gradient_expr,
     hessian_expr,
     integrate_expr,
     limit_expr,
+    matrix_determinant,
+    matrix_inverse,
+    matrix_multiply,
     series_expr,
     simplify_expr,
     solve_equation,
+    solve_ode,
 )
 from scolx_math.core.utils import run_cpu_bound_async
 from scolx_math.explain.explainers import (
@@ -137,6 +142,77 @@ class MathOperationService:
         return {"result": result, "steps": all_steps}
 
     @staticmethod
+    async def handle_ode(
+        equation: str,
+        function: str,
+        variable: str,
+        initial_conditions: dict[str, str] | None,
+        numeric: bool,
+        numeric_start: str | None,
+        numeric_end: str | None,
+        samples: int,
+    ) -> dict[str, Any]:
+        """Solve an ordinary differential equation."""
+
+        try:
+            solution = await run_cpu_bound_async(
+                solve_ode,
+                equation,
+                function,
+                variable,
+                initial_conditions,
+                numeric,
+                numeric_start,
+                numeric_end,
+                samples,
+            )
+        except Exception as e:  # pragma: no cover - defensive
+            raise ValueError(
+                f"Error while solving differential equation: {str(e)}"
+            ) from e
+
+        if isinstance(solution, list):
+            return {"points": solution}
+        return {"result": str(solution)}
+
+    @staticmethod
+    async def handle_matrix_determinant(matrix: list[list[object]]) -> dict[str, Any]:
+        """Compute determinant of a matrix."""
+
+        try:
+            det_value = await run_cpu_bound_async(matrix_determinant, matrix)
+        except Exception as e:  # pragma: no cover - defensive
+            raise ValueError(f"Error in determinant calculation: {str(e)}") from e
+
+        return {"result": str(det_value), "steps": []}
+
+    @staticmethod
+    async def handle_matrix_inverse(matrix: list[list[object]]) -> dict[str, Any]:
+        """Compute the inverse of a matrix."""
+
+        try:
+            inverse_matrix = await run_cpu_bound_async(matrix_inverse, matrix)
+        except Exception as e:  # pragma: no cover - defensive
+            raise ValueError(f"Error in matrix inversion: {str(e)}") from e
+
+        result = [[str(entry) for entry in row] for row in inverse_matrix.tolist()]
+        return {"result": result, "steps": []}
+
+    @staticmethod
+    async def handle_matrix_multiply(
+        left: list[list[object]], right: list[list[object]]
+    ) -> dict[str, Any]:
+        """Multiply two matrices."""
+
+        try:
+            product = await run_cpu_bound_async(matrix_multiply, left, right)
+        except Exception as e:  # pragma: no cover - defensive
+            raise ValueError(f"Error in matrix multiplication: {str(e)}") from e
+
+        result = [[str(entry) for entry in row] for row in product.tolist()]
+        return {"result": result, "steps": []}
+
+    @staticmethod
     async def handle_hessian(
         expression: str, variables: list[str], steps: bool
     ) -> dict[str, Any]:
@@ -213,6 +289,25 @@ class MathOperationService:
             }
         except Exception as e:
             raise ValueError(f"Error in series calculation: {str(e)}") from e
+
+    @staticmethod
+    async def handle_plot(
+        expression: str,
+        variable: str,
+        start: str,
+        end: str,
+        samples: int,
+    ) -> dict[str, Any]:
+        """Sample an expression over a range for plotting."""
+
+        try:
+            points = await run_cpu_bound_async(
+                generate_plot_points, expression, variable, start, end, samples
+            )
+        except Exception as e:
+            raise ValueError(f"Error while generating plot data: {str(e)}") from e
+
+        return {"points": points}
 
     @staticmethod
     async def handle_integral(

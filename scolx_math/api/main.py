@@ -20,6 +20,10 @@ LATEX_TYPES = {
     "limit_latex",
     "series_latex",
 }
+
+MATRIX_SINGLE_TYPES = {"matrix_determinant", "matrix_inverse"}
+MATRIX_DOUBLE_TYPES = {"matrix_multiply"}
+MATRIX_TYPES = MATRIX_SINGLE_TYPES | MATRIX_DOUBLE_TYPES
 VARIABLE_REQUIRED = {
     "integral",
     "integral_latex",
@@ -51,6 +55,29 @@ class OperationType(str, Enum):
     SOLVE_LATEX = "solve_latex"
     LIMIT_LATEX = "limit_latex"
     SERIES_LATEX = "series_latex"
+    MATRIX_DETERMINANT = "matrix_determinant"
+    MATRIX_INVERSE = "matrix_inverse"
+    MATRIX_MULTIPLY = "matrix_multiply"
+    ODE = "ode"
+    PLOT = "plot"
+
+
+EXPRESSION_REQUIRED = {
+    OperationType.INTEGRAL.value,
+    OperationType.DERIVATIVE.value,
+    OperationType.SOLVE.value,
+    OperationType.SIMPLIFY.value,
+    OperationType.LIMIT.value,
+    OperationType.SERIES.value,
+    OperationType.INTEGRAL_LATEX.value,
+    OperationType.DERIVATIVE_LATEX.value,
+    OperationType.SOLVE_LATEX.value,
+    OperationType.LIMIT_LATEX.value,
+    OperationType.SERIES_LATEX.value,
+    OperationType.GRADIENT.value,
+    OperationType.HESSIAN.value,
+    OperationType.PLOT.value,
+}
 
 
 @asynccontextmanager
@@ -91,7 +118,7 @@ class MathRequest(BaseModel):
         ...,
         description="Operation to perform (e.g. integral, solve_latex)",
     )
-    expression: str = Field(..., min_length=1)
+    expression: str | None = Field(None)
     variable: str | None = Field(None, description="Variable name when required")
     variables: list[str] | None = Field(
         None, description="Variables for multivariate operations (e.g. gradient)"
@@ -103,14 +130,43 @@ class MathRequest(BaseModel):
         False,
         description="Whether expression is provided as LaTeX (redundant for *_latex types)",
     )
+    plot_range: tuple[str, str] | None = Field(
+        None,
+        description="Tuple specifying start and end for plotting",
+    )
+    numeric_range: tuple[str, str] | None = Field(
+        None,
+        description="Tuple specifying start and end for numeric ODE solving",
+    )
+    samples: int = Field(
+        100, ge=2, le=1000, description="Sample count for plotting or numeric solutions"
+    )
+    numeric: bool = Field(False, description="Use numeric methods when available")
+    matrix: list[list[Any]] | None = Field(
+        None, description="Matrix input for determinant/inverse operations"
+    )
+    left_matrix: list[list[Any]] | None = Field(
+        None, description="Left matrix for multiplication"
+    )
+    right_matrix: list[list[Any]] | None = Field(
+        None, description="Right matrix for multiplication"
+    )
+    function: str | None = Field(
+        None, description="Dependent function name for ODE solving"
+    )
+    initial_conditions: dict[str, str] | None = Field(
+        None,
+        description="Initial conditions for ODE solving, keyed by f(x0)",
+    )
 
     @field_validator("expression")
     @classmethod
-    def _strip_expression(cls, value: str) -> str:
+    def _strip_expression(cls, value: str | None) -> str | None:
         """Validate that expression is not empty."""
-        if not value.strip():
-            raise ValueError("Expression cannot be empty.")
-        return value
+        if value is None:
+            return None
+        stripped = value.strip()
+        return stripped or None
 
     @field_validator("variable", "point", mode="before")
     @classmethod
@@ -119,6 +175,69 @@ class MathRequest(BaseModel):
         if isinstance(value, str):
             value = value.strip()
         return value or None
+
+    @field_validator("matrix", "left_matrix", "right_matrix", mode="before")
+    @classmethod
+    def _normalize_matrices(cls, value: Any) -> list[list[Any]] | None:
+        """Ensure matrices are lists of lists and normalize tuples."""
+
+        if value is None:
+            return None
+
+        if isinstance(value, tuple):
+            value = list(value)
+        if not isinstance(value, list):
+            raise TypeError("Matrix must be provided as a list of lists.")
+
+        normalized: list[list[Any]] = []
+        for row in value:
+            if isinstance(row, tuple):
+                row = list(row)
+            if not isinstance(row, list):
+                raise TypeError("Matrix rows must be provided as lists.")
+            normalized.append(list(row))
+
+        return normalized
+
+    @field_validator("plot_range", mode="before")
+    @classmethod
+    def _normalize_plot_range(cls, value: Any) -> tuple[str, str] | None:
+        """Normalize plot range to a tuple of two strings."""
+
+        if value is None:
+            return None
+
+        if isinstance(value, (list, tuple)) and len(value) == 2:
+            start, end = value
+            if not isinstance(start, str) or not isinstance(end, str):
+                raise TypeError("Plot range must contain two string expressions.")
+            start = start.strip()
+            end = end.strip()
+            if not start or not end:
+                raise ValueError("Plot range expressions cannot be empty.")
+            return start, end
+
+        raise TypeError("Plot range must be a sequence with two string elements.")
+
+    @field_validator("numeric_range", mode="before")
+    @classmethod
+    def _normalize_numeric_range(cls, value: Any) -> tuple[str, str] | None:
+        """Normalize numeric range for ODE solving."""
+
+        if value is None:
+            return None
+
+        if isinstance(value, (list, tuple)) and len(value) == 2:
+            start, end = value
+            if not isinstance(start, str) or not isinstance(end, str):
+                raise TypeError("Numeric range must contain two string expressions.")
+            start = start.strip()
+            end = end.strip()
+            if not start or not end:
+                raise ValueError("Numeric range expressions cannot be empty.")
+            return start, end
+
+        raise TypeError("Numeric range must be a sequence with two string elements.")
 
     @field_validator("variables", mode="before")
     @classmethod
@@ -169,10 +288,47 @@ class MathRequest(BaseModel):
             raise ValueError("Point is required for limit or series operations.")
 
         if (
-            op_value in {OperationType.GRADIENT.value, OperationType.HESSIAN.value}
+            op_value
+            in {
+                OperationType.GRADIENT.value,
+                OperationType.HESSIAN.value,
+            }
             and not self.variables
         ):
             raise ValueError("Variables list is required for multivariate operations.")
+
+        if op_value in EXPRESSION_REQUIRED and not self.expression:
+            raise ValueError("Expression is required for the selected operation.")
+
+        if op_value in MATRIX_SINGLE_TYPES and not self.matrix:
+            raise ValueError("Matrix input is required for this operation.")
+
+        if op_value in MATRIX_DOUBLE_TYPES and (
+            not self.left_matrix or not self.right_matrix
+        ):
+            raise ValueError(
+                "Both left_matrix and right_matrix are required for matrix multiplication."
+            )
+
+        if op_value == OperationType.PLOT.value:
+            if not self.plot_range:
+                raise ValueError("Plot range must be provided as [start, end].")
+            if not self.variable:
+                raise ValueError("Variable is required for plotting operations.")
+            if not self.expression:
+                raise ValueError("Expression is required for plotting operations.")
+
+        if op_value == OperationType.ODE.value:
+            if not self.expression:
+                raise ValueError("ODE equation expression is required.")
+            if not self.variable:
+                raise ValueError("ODE variable is required.")
+            if not self.function:
+                raise ValueError("Function name is required for ODE solving.")
+            if self.numeric and not self.numeric_range:
+                raise ValueError(
+                    "Numeric ODE solving requires numeric_range to be provided."
+                )
 
         return self
 
@@ -181,6 +337,38 @@ class MathRequest(BaseModel):
         """Return variables preserving original order."""
 
         return self.variables
+
+    @property
+    def matrix_data(self) -> list[list[Any]] | None:
+        return self.matrix
+
+    @property
+    def left_matrix_data(self) -> list[list[Any]] | None:
+        return self.left_matrix
+
+    @property
+    def right_matrix_data(self) -> list[list[Any]] | None:
+        return self.right_matrix
+
+    @property
+    def plot_start(self) -> str | None:
+        return self.plot_range[0] if self.plot_range else None
+
+    @property
+    def plot_end(self) -> str | None:
+        return self.plot_range[1] if self.plot_range else None
+
+    @property
+    def ode_initial_conditions(self) -> dict[str, str] | None:
+        return self.initial_conditions
+
+    @property
+    def numeric_start(self) -> str | None:
+        return self.numeric_range[0] if self.numeric_range else None
+
+    @property
+    def numeric_end(self) -> str | None:
+        return self.numeric_range[1] if self.numeric_range else None
 
 
 @app.post("/solve")
@@ -244,6 +432,18 @@ async def solve_math(req: MathRequest):
             return await MathOperationService.handle_series(
                 req.expression, req.variable, req.point, req.order, req.steps
             )
+        elif req.type is OperationType.MATRIX_DETERMINANT:
+            return await MathOperationService.handle_matrix_determinant(
+                req.matrix_data or []
+            )
+        elif req.type is OperationType.MATRIX_INVERSE:
+            return await MathOperationService.handle_matrix_inverse(
+                req.matrix_data or []
+            )
+        elif req.type is OperationType.MATRIX_MULTIPLY:
+            return await MathOperationService.handle_matrix_multiply(
+                req.left_matrix_data or [], req.right_matrix_data or []
+            )
         elif req.type is OperationType.GRADIENT:
             return await MathOperationService.handle_gradient(
                 req.expression, req.ordered_variables or [], req.steps
@@ -251,6 +451,25 @@ async def solve_math(req: MathRequest):
         elif req.type is OperationType.HESSIAN:
             return await MathOperationService.handle_hessian(
                 req.expression, req.ordered_variables or [], req.steps
+            )
+        elif req.type is OperationType.ODE:
+            return await MathOperationService.handle_ode(
+                req.expression,
+                req.function,
+                req.variable,
+                req.ode_initial_conditions,
+                req.numeric,
+                req.numeric_start,
+                req.numeric_end,
+                req.samples,
+            )
+        elif req.type is OperationType.PLOT:
+            return await MathOperationService.handle_plot(
+                req.expression,
+                req.variable,
+                req.plot_start or "0",
+                req.plot_end or "0",
+                req.samples,
             )
 
         raise HTTPException(

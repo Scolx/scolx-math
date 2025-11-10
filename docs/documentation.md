@@ -12,6 +12,7 @@
 9. [Testing](#testing)
 10. [Contributing](#contributing)
 11. [Deployment](#deployment)
+12. [Plotting](#plotting)
 
 ## Overview
 
@@ -353,6 +354,13 @@ pytest --cov=scolx_math
 For production deployment instructions, see the dedicated guide at
 [`docs/deployment.md`](deployment.md). It covers image builds, runtime
 configuration, Docker Compose examples, and GitLab CI/CD integration.
+
+## Plotting
+
+Use the `plot` operation to sample an expression over a range. Provide the
+expression, variable, `plot_range` (start/end), and optional `samples` count.
+The API returns a list of `{ "x": value, "y": value }` points that can be fed
+into charting libraries.
 
 ## Dependencies
 

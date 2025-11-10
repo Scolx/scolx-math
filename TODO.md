@@ -18,9 +18,9 @@
 ## Planned Features
 - ✅ Enhanced LaTeX parsing with more comprehensive support
 - ✅ Support for multivariate calculus
-- 🔲 Matrix and linear algebra operations
-- 🔲 Plotting and visualization capabilities
-- 🔲 Support for differential equations
+- ✅ Matrix and linear algebra operations
+- ✅ Plotting and visualization capabilities
+- ✅ Support for differential equations
 - 🔲 Complex number operations
 - 🔲 Statistics and probability functions
 - 🔲 Custom function definitions

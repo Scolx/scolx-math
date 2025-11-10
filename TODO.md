@@ -31,6 +31,7 @@
 - ✅ Docker containerization
 - ✅ CI/CD pipeline setup
 - ✅ Health check endpoints (e.g. /livez, /readyz, /startupz)
+- 🔲 Unified LaTeX support: Refactor API to use is_latex parameter instead of separate operation types
 
 ## Bug Fixes
 - ✅ Verify LaTeX parsing edge cases

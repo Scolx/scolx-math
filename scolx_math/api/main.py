@@ -3,6 +3,7 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from enum import Enum
+from typing import Self
 
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exception_handlers import request_validation_exception_handler
@@ -13,30 +14,18 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from scolx_math.api.service import MathOperationService
 from scolx_math.core.utils import cleanup_threadpool
 
-LATEX_TYPES = {
-    "integral_latex",
-    "derivative_latex",
-    "solve_latex",
-    "limit_latex",
-    "series_latex",
-}
-
 MATRIX_SINGLE_TYPES = {"matrix_determinant", "matrix_inverse"}
 MATRIX_DOUBLE_TYPES = {"matrix_multiply"}
 MATRIX_TYPES = MATRIX_SINGLE_TYPES | MATRIX_DOUBLE_TYPES
 VARIABLE_REQUIRED = {
     "integral",
-    "integral_latex",
     "derivative",
-    "derivative_latex",
     "solve",
-    "solve_latex",
     "limit",
-    "limit_latex",
     "series",
-    "series_latex",
+    # Note: gradient and hessian use the 'variables' field, not 'variable', so they are not in this list
 }
-POINT_REQUIRED = {"limit", "limit_latex", "series", "series_latex"}
+POINT_REQUIRED = {"limit", "series"}
 
 
 class OperationType(str, Enum):
@@ -50,11 +39,6 @@ class OperationType(str, Enum):
     SERIES = "series"
     GRADIENT = "gradient"
     HESSIAN = "hessian"
-    INTEGRAL_LATEX = "integral_latex"
-    DERIVATIVE_LATEX = "derivative_latex"
-    SOLVE_LATEX = "solve_latex"
-    LIMIT_LATEX = "limit_latex"
-    SERIES_LATEX = "series_latex"
     MATRIX_DETERMINANT = "matrix_determinant"
     MATRIX_INVERSE = "matrix_inverse"
     MATRIX_MULTIPLY = "matrix_multiply"
@@ -80,11 +64,6 @@ EXPRESSION_REQUIRED = {
     OperationType.SIMPLIFY.value,
     OperationType.LIMIT.value,
     OperationType.SERIES.value,
-    OperationType.INTEGRAL_LATEX.value,
-    OperationType.DERIVATIVE_LATEX.value,
-    OperationType.SOLVE_LATEX.value,
-    OperationType.LIMIT_LATEX.value,
-    OperationType.SERIES_LATEX.value,
     OperationType.GRADIENT.value,
     OperationType.HESSIAN.value,
     OperationType.PLOT.value,
@@ -137,7 +116,7 @@ class MathRequest(BaseModel):
 
     type: OperationType = Field(
         ...,
-        description="Operation to perform (e.g. integral, solve_latex)",
+        description="Operation to perform (e.g. integral, solve)",
     )
     expression: str | None = Field(None)
     variable: str | None = Field(None, description="Variable name when required")
@@ -150,7 +129,7 @@ class MathRequest(BaseModel):
     steps: bool = Field(default=True, description="Include step-by-step explanations")
     is_latex: bool = Field(
         default=False,
-        description="Whether expression is provided as LaTeX (redundant for *_latex types)",
+        description="Whether expression is provided as LaTeX",
     )
     plot_range: tuple[str, str] | None = Field(
         None,
@@ -389,13 +368,9 @@ class MathRequest(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def _validate_combinations(self) -> MathRequest:
+    def _validate_combinations(self) -> Self:
         """Validate field combinations based on operation type."""
         op_value = self.type.value
-        if op_value in LATEX_TYPES and not self.is_latex:
-            raise ValueError("Set is_latex=true for LaTeX-specific operations.")
-        if op_value not in LATEX_TYPES and self.is_latex:
-            raise ValueError("Plain-text operations must not set is_latex=true.")
 
         if op_value in VARIABLE_REQUIRED and not self.variable:
             raise ValueError("Variable is required for the selected operation.")
@@ -589,64 +564,33 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
         Dictionary containing result and optional step-by-step explanations
     """
     try:
-        # LaTeX operations
-        if req.type is OperationType.INTEGRAL_LATEX:
-            return await MathOperationService.handle_integral_latex(
-                req.expression,
-                req.variable,
-                steps=req.steps,
-            )
-        if req.type is OperationType.DERIVATIVE_LATEX:
-            return await MathOperationService.handle_derivative_latex(
-                req.expression,
-                req.variable,
-                steps=req.steps,
-            )
-        if req.type is OperationType.SOLVE_LATEX:
-            return await MathOperationService.handle_solve_latex(
-                req.expression,
-                req.variable,
-                steps=req.steps,
-            )
-        if req.type is OperationType.LIMIT_LATEX:
-            return await MathOperationService.handle_limit_latex(
-                req.expression,
-                req.variable,
-                req.point,
-                steps=req.steps,
-            )
-        if req.type is OperationType.SERIES_LATEX:
-            return await MathOperationService.handle_series_latex(
-                req.expression,
-                req.variable,
-                req.point,
-                req.order,
-                steps=req.steps,
-            )
-
-        # Plain text operations
+        # Operations that support both plain text and LaTeX via is_latex flag
         if req.type is OperationType.INTEGRAL:
             return await MathOperationService.handle_integral(
                 req.expression,
                 req.variable,
                 steps=req.steps,
+                is_latex=req.is_latex,
             )
         if req.type is OperationType.DERIVATIVE:
             return await MathOperationService.handle_derivative(
                 req.expression,
                 req.variable,
                 steps=req.steps,
+                is_latex=req.is_latex,
             )
         if req.type is OperationType.SOLVE:
             return await MathOperationService.handle_solve(
                 req.expression,
                 req.variable,
                 steps=req.steps,
+                is_latex=req.is_latex,
             )
         if req.type is OperationType.SIMPLIFY:
             return await MathOperationService.handle_simplify(
                 req.expression,
                 steps=req.steps,
+                is_latex=req.is_latex,
             )
         if req.type is OperationType.LIMIT:
             return await MathOperationService.handle_limit(
@@ -654,6 +598,7 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
                 req.variable,
                 req.point,
                 steps=req.steps,
+                is_latex=req.is_latex,
             )
         if req.type is OperationType.SERIES:
             return await MathOperationService.handle_series(
@@ -662,6 +607,21 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
                 req.point,
                 req.order,
                 steps=req.steps,
+                is_latex=req.is_latex,
+            )
+        if req.type is OperationType.GRADIENT:
+            return await MathOperationService.handle_gradient(
+                req.expression,
+                req.ordered_variables or [],
+                steps=req.steps,
+                is_latex=req.is_latex,
+            )
+        if req.type is OperationType.HESSIAN:
+            return await MathOperationService.handle_hessian(
+                req.expression,
+                req.ordered_variables or [],
+                steps=req.steps,
+                is_latex=req.is_latex,
             )
         if req.type is OperationType.MATRIX_DETERMINANT:
             return await MathOperationService.handle_matrix_determinant(
@@ -676,18 +636,6 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
                 req.left_matrix_data or [],
                 req.right_matrix_data or [],
             )
-        if req.type is OperationType.GRADIENT:
-            return await MathOperationService.handle_gradient(
-                req.expression,
-                req.ordered_variables or [],
-                steps=req.steps,
-            )
-        if req.type is OperationType.HESSIAN:
-            return await MathOperationService.handle_hessian(
-                req.expression,
-                req.ordered_variables or [],
-                steps=req.steps,
-            )
         if req.type is OperationType.ODE:
             return await MathOperationService.handle_ode(
                 req.expression,
@@ -698,19 +646,33 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
                 numeric_start=req.numeric_start,
                 numeric_end=req.numeric_end,
                 samples=req.samples,
+                is_latex=req.is_latex,
             )
         if req.type is OperationType.COMPLEX_CONJUGATE:
-            return await MathOperationService.handle_complex_conjugate(req.expression)
+            return await MathOperationService.handle_complex_conjugate(
+                req.expression,
+                is_latex=req.is_latex,
+            )
         if req.type is OperationType.COMPLEX_MODULUS:
-            return await MathOperationService.handle_complex_modulus(req.expression)
+            return await MathOperationService.handle_complex_modulus(
+                req.expression,
+                is_latex=req.is_latex,
+            )
         if req.type is OperationType.COMPLEX_ARGUMENT:
-            return await MathOperationService.handle_complex_argument(req.expression)
+            return await MathOperationService.handle_complex_argument(
+                req.expression,
+                is_latex=req.is_latex,
+            )
         if req.type is OperationType.COMPLEX_TO_POLAR:
-            return await MathOperationService.handle_complex_to_polar(req.expression)
+            return await MathOperationService.handle_complex_to_polar(
+                req.expression,
+                is_latex=req.is_latex,
+            )
         if req.type is OperationType.COMPLEX_FROM_POLAR:
             return await MathOperationService.handle_complex_from_polar(
                 req.polar_radius or "0",
                 req.polar_angle or "0",
+                is_latex=req.is_latex,
             )
         if req.type is OperationType.STATS_MEAN:
             return await MathOperationService.handle_stats_mean(req.stats_values or [])
@@ -730,6 +692,7 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
                 value or "0",
                 mean or "0",
                 std or "1",
+                is_latex=req.is_latex,
             )
         if req.type is OperationType.NORMAL_CDF:
             value, mean, std = req.distribution_parameters
@@ -737,6 +700,7 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
                 value or "0",
                 mean or "0",
                 std or "1",
+                is_latex=req.is_latex,
             )
         if req.type is OperationType.SOLVE_NUMERIC:
             return await MathOperationService.handle_numeric_solve(
@@ -753,6 +717,7 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
                 req.plot_start or "0",
                 req.plot_end or "0",
                 req.samples,
+                is_latex=req.is_latex,
             )
 
         raise HTTPException(

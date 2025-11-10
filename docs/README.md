@@ -1,7 +1,7 @@
 # Scolx Math – Documentation
 
 ## Overview
-Scolx Math is a Python project providing a FastAPI service for symbolic math operations with step-by-step explanations. The project now supports all major mathematical operations including integration, differentiation, equation solving, simplification, limits, and series expansion for both plain text and LaTeX expressions.
+Scolx Math is a Python project providing a FastAPI service for symbolic math operations with step-by-step explanations. The project now supports all major mathematical operations including integration, differentiation, equation solving, simplification, limits, series expansion, gradient, Hessian, matrix operations, differential equations, complex numbers, statistics, plotting, and numeric solving for both plain text and LaTeX expressions.
 
 ## Project Layout
 - scolx_math/core: core symbolic operations (SymPy)
@@ -30,7 +30,7 @@ Open http://127.0.0.1:8000/docs
 - POST /solve
   - body: { "type": "integral", "expression": "x**2", "variable": "x", "steps": true }
   - response: { "result": "x**3/3", "steps": [ ... ] }
-  - Supports: integral, derivative, solve, simplify, limit, series, and their LaTeX equivalents
+  - Supports: integral, derivative, solve, simplify, limit, series, gradient, Hessian, matrix operations, ODE, plot, complex numbers, statistics, numeric solving, and their LaTeX equivalents
 
 ## Testing
 ```

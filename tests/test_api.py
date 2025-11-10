@@ -235,55 +235,71 @@ def test_missing_variable_validation_error() -> None:
     )
 
 
-def test_latex_requires_flag() -> None:
-    response = _post(
-        {
-            "type": "integral_latex",
-            "expression": "x^2",
-            "variable": "x",
-            "is_latex": False,
-        },
-    )
-    assert response.status_code == 422
-    detail_messages = [entry["msg"] for entry in response.json()["detail"]]
-    assert any(
-        msg.endswith("Set is_latex=true for LaTeX-specific operations.")
-        for msg in detail_messages
-    )
-
-
-def test_plain_operation_rejects_latex_flag() -> None:
+def test_integration_with_latex() -> None:
     response = _post(
         {
             "type": "integral",
-            "expression": "x**2",
+            "expression": "x^2",
             "variable": "x",
             "is_latex": True,
         },
     )
-    assert response.status_code == 422
-    detail_messages = [entry["msg"] for entry in response.json()["detail"]]
-    assert any(
-        msg.endswith("Plain-text operations must not set is_latex=true.")
-        for msg in detail_messages
-    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "result" in data
+    # Check that the result is mathematically correct
+    # integral of x^2 = x^3/3 + C
+    assert "x**3/3" in data["result"] or "x^3/3" in data["result"]
 
 
-def test_limit_latex_requires_point() -> None:
+def test_differentiation_with_latex() -> None:
     response = _post(
         {
-            "type": "limit_latex",
-            "expression": "\\frac{\\sin(x)}{x}",
+            "type": "derivative",
+            "expression": "x^3",
             "variable": "x",
             "is_latex": True,
         },
     )
-    assert response.status_code == 422
-    detail_messages = [entry["msg"] for entry in response.json()["detail"]]
-    assert any(
-        msg.endswith("Point is required for limit or series operations.")
-        for msg in detail_messages
+    assert response.status_code == 200
+    data = response.json()
+    assert "result" in data
+    # Check that the result is mathematically correct
+    # derivative of x^3 = 3*x^2
+    assert "3*x**2" in data["result"] or "3*x^2" in data["result"]
+
+
+def test_solve_with_latex() -> None:
+    response = _post(
+        {
+            "type": "solve",
+            "expression": "x^2 - 4",
+            "variable": "x",
+            "is_latex": True,
+        },
     )
+    assert response.status_code == 200
+    data = response.json()
+    assert "result" in data
+    assert "2" in data["result"]
+    assert "-2" in data["result"]
+
+
+def test_limit_with_latex() -> None:
+    response = _post(
+        {
+            "type": "limit",
+            "expression": "\\frac{\\sin(x)}{x}",
+            "variable": "x",
+            "point": "0",
+            "is_latex": True,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "result" in data
+    # The limit of sin(x)/x as x approaches 0 is 1
+    assert data["result"] == "1"
 
 
 def test_gradient_requires_variables() -> None:

@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 import argparse
+import signal
 import statistics
 import sys
 import time
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from typing import Never
 
 from scolx_math.advanced_latex import (
+    differentiate_latex_with_steps,
     integrate_latex_with_steps,
+    limit_latex_with_steps,
+    series_latex_with_steps,
     solve_equation_latex_with_steps,
 )
 from scolx_math.core import operations as operations_module
@@ -20,6 +25,9 @@ from scolx_math.core.operations import (
 )
 
 LATEX_INTEGRAL_EXPR = r"\frac{\exp\left(x^{2}\right) x^{5}}{1 + x^{2}}"
+LATEX_DERIV_EXPR = r"\sin\!\left(x^{3}\right) + x^{2}"
+LATEX_LIMIT_EXPR = r"\frac{\sin(x)}{x}"
+LATEX_SERIES_EXPR = r"e^{x}"
 LATEX_SOLVE_EXPR = r"x^{6} - 3 x^{3} + 1"
 SERIES_EXPRESSION = "exp(sin(x)) + log(1 + x)"
 HESSIAN_EXPRESSION = "x**4 + y**4 + z**4 + w**4 + x*y*z*w + sin(x*y) * cos(z*w)"
@@ -41,7 +49,7 @@ class BenchmarkCase:
     name: str
     func: Callable[[], object]
     warmup_runs: int = 1
-    iterations: int = 5
+    iterations: int = 3
 
     def overridden(
         self,
@@ -99,6 +107,18 @@ def _benchmark_numeric_solver() -> None:
     )
 
 
+def _benchmark_latex_derivative() -> None:
+    differentiate_latex_with_steps(LATEX_DERIV_EXPR, "x")
+
+
+def _benchmark_latex_limit() -> None:
+    limit_latex_with_steps(LATEX_LIMIT_EXPR, "x", "0")
+
+
+def _benchmark_latex_series() -> None:
+    series_latex_with_steps(LATEX_SERIES_EXPR, "x", "0", 10)
+
+
 CASES: list[BenchmarkCase] = [
     BenchmarkCase(
         "latex_integral_complex",
@@ -109,6 +129,24 @@ CASES: list[BenchmarkCase] = [
     BenchmarkCase(
         "latex_solve_polynomial",
         _benchmark_latex_solve,
+        warmup_runs=1,
+        iterations=3,
+    ),
+    BenchmarkCase(
+        "latex_derivative_mixed",
+        _benchmark_latex_derivative,
+        warmup_runs=1,
+        iterations=3,
+    ),
+    BenchmarkCase(
+        "latex_limit_sin_over_x",
+        _benchmark_latex_limit,
+        warmup_runs=1,
+        iterations=3,
+    ),
+    BenchmarkCase(
+        "latex_series_expansion",
+        _benchmark_latex_series,
         warmup_runs=1,
         iterations=3,
     ),
@@ -134,28 +172,66 @@ CASES: list[BenchmarkCase] = [
 ]
 
 
-def _run_case(case: BenchmarkCase) -> BenchmarkResult:
+@dataclass
+class _IterationOutcome:
+    durations: list[float]
+    status: str
+    message: str | None = None
+
+
+def _warmup(case: BenchmarkCase) -> None:
+    for _ in range(case.warmup_runs):
+        case.func()
+
+
+def _run_iterations(case: BenchmarkCase, *, timeout_s: int | None) -> _IterationOutcome:
+    durations: list[float] = []
+
+    def _handle_timeout(
+        _signum: int,
+        _frame: object,
+    ) -> Never:  # pragma: no cover - timing dependent
+        raise TimeoutError("Benchmark iteration exceeded timeout")
+
+    def _time_once(func: Callable[[], object]) -> float:
+        if timeout_s:
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.alarm(timeout_s)
+        start = time.perf_counter()
+        func()
+        end = time.perf_counter()
+        if timeout_s:
+            signal.alarm(0)
+        return end - start
+
+    for _ in range(case.iterations):
+        try:
+            durations.append(_time_once(case.func))
+        except SkipBenchmark as exc:
+            return _IterationOutcome(durations, "skipped", str(exc))
+        except TimeoutError as exc:
+            return _IterationOutcome(durations, "error", str(exc))
+        except Exception as exc:  # pragma: no cover - defensive
+            return _IterationOutcome(durations, "error", str(exc))
+
+    return _IterationOutcome(durations, "ok")
+
+
+def _run_case(case: BenchmarkCase, *, timeout_s: int | None = None) -> BenchmarkResult:
     try:
-        for _ in range(case.warmup_runs):
-            case.func()
+        _warmup(case)
     except SkipBenchmark as exc:
         return BenchmarkResult(case.name, "skipped", [], str(exc))
     except Exception as exc:  # pragma: no cover - defensive
         return BenchmarkResult(case.name, "error", [], f"Warmup failed: {exc}")
 
-    durations: list[float] = []
-    for _ in range(case.iterations):
-        try:
-            start = time.perf_counter()
-            case.func()
-            end = time.perf_counter()
-        except SkipBenchmark as exc:
-            return BenchmarkResult(case.name, "skipped", durations, str(exc))
-        except Exception as exc:  # pragma: no cover - defensive
-            return BenchmarkResult(case.name, "error", durations, str(exc))
-        durations.append(end - start)
-
-    return BenchmarkResult(case.name, "ok", durations)
+    outcome = _run_iterations(case, timeout_s=timeout_s)
+    return BenchmarkResult(
+        case.name,
+        outcome.status,
+        outcome.durations,
+        outcome.message,
+    )
 
 
 def _format_duration_stats(durations: Iterable[float]) -> tuple[str, str, str, str]:
@@ -214,6 +290,12 @@ def _parse_args() -> argparse.Namespace:
         action="append",
         help="Name of a benchmark case to run (can be provided multiple times).",
     )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=10,
+        help="Per-iteration timeout in seconds (default: 10). Set 0 to disable.",
+    )
     return parser.parse_args()
 
 
@@ -238,7 +320,10 @@ def main() -> int:
         for case in selected_cases
     ]
 
-    results = [_run_case(case) for case in overrides_applied]
+    per_iter_timeout = args.timeout if args.timeout and args.timeout > 0 else None
+    results = [
+        _run_case(case, timeout_s=per_iter_timeout) for case in overrides_applied
+    ]
 
     print("\nScolx Math heavy-operations benchmark\n")
     _print_summary(results)

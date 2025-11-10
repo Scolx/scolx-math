@@ -39,7 +39,13 @@ _SAFE_LOCALS: dict[str, sp.Function | sp.Basic] = {
 }
 _SYMBOL_PATTERN = re.compile(r"^[A-Za-z]\w*$")
 
-__all__ = ["get_safe_locals", "parse_plain_expression", "validate_variable_name"]
+__all__ = [
+    "get_safe_locals",
+    "parse_expression",
+    "parse_latex_expression",
+    "parse_plain_expression",
+    "validate_variable_name",
+]
 
 
 def validate_variable_name(name: str) -> str:
@@ -83,6 +89,40 @@ def parse_plain_expression(
 
     _ensure_safe_symbols(expr)
     return expr
+
+
+def parse_latex_expression(latex_expr: str) -> sp.Expr:
+    """
+    Parse a LaTeX mathematical expression into a SymPy expression.
+
+    This function is imported from advanced_latex module to avoid circular imports.
+    """
+    from scolx_math.advanced_latex import (
+        parse_latex_expression as _parse_latex_expression,
+    )
+
+    return _parse_latex_expression(latex_expr)
+
+
+def parse_expression(
+    expr_str: str,
+    is_latex: bool,
+    variables: Iterable[str] | None = None,
+) -> sp.Expr:
+    """
+    Parse an expression that can be either plain text or LaTeX based on the is_latex flag.
+
+    Args:
+        expr_str: The expression string to parse
+        is_latex: Whether the expression is in LaTeX format
+        variables: Optional variables to include in the parsing context
+
+    Returns:
+        The parsed SymPy expression
+    """
+    if is_latex:
+        return parse_latex_expression(expr_str)
+    return parse_plain_expression(expr_str, variables)
 
 
 def get_safe_locals() -> dict[str, sp.Function | sp.Basic]:

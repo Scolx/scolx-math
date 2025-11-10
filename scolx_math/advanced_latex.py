@@ -34,7 +34,8 @@ _LATEX_REGEX_REPLACEMENTS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\\left\s*"), ""),
     (re.compile(r"\\right\s*"), ""),
     (re.compile(r"\\mathrm\{\s*([A-Za-z])\s*\}"), r"\1"),
-    (re.compile(r"\\operatorname\{\s*([A-Za-z0-9_]+)\s*\}"), r"\1"),
+    # Preserve LaTeX function by adding a backslash: \operatorname{sin} -> \sin
+    (re.compile(r"\\operatorname\{\s*([A-Za-z0-9_]+)\s*\}"), r"\\\\\1"),
 )
 
 
@@ -99,11 +100,15 @@ def parse_latex_expression(latex_expr: str) -> sp.Expr:
 def _candidate_latex_inputs(original_expr: str) -> list[str]:
     """Return sanitized LaTeX variants to improve parsing robustness."""
 
-    candidates = [original_expr.strip()]
+    original = original_expr.strip()
     normalized = _normalize_latex_expression(original_expr)
-    if normalized and normalized != candidates[0]:
-        candidates.append(normalized)
-    return [candidate for candidate in candidates if candidate]
+    # Prefer normalized first to avoid accepting suboptimal parses of the original
+    ordered = []
+    if normalized:
+        ordered.append(normalized)
+    if original and original != normalized:
+        ordered.append(original)
+    return [candidate for candidate in ordered if candidate]
 
 
 def _normalize_latex_expression(latex_expr: str) -> str:
@@ -114,7 +119,8 @@ def _normalize_latex_expression(latex_expr: str) -> str:
         expr = pattern.sub(replacement, expr)
     for source, target in _LATEX_SIMPLE_REPLACEMENTS.items():
         expr = expr.replace(source, target)
-    return expr
+    # Collapse double backslashes into single backslashes (common when strings are over-escaped)
+    return expr.replace("\\\\", "\\")
 
 
 def _ensure_safe_symbols(expr: sp.Expr) -> None:
@@ -142,8 +148,9 @@ def integrate_latex_with_steps(latex_expr: str, var_name: str) -> tuple[str, lis
     expr = parse_latex_expression(latex_expr)
 
     # Create the symbol for integration
-    var = sp.Symbol(var_name)
-    steps.append(f"Identifying variable of integration: {var_name}")
+    safe_var_name = validate_variable_name(var_name)
+    var = sp.Symbol(safe_var_name)
+    steps.append(f"Identifying variable of integration: {safe_var_name}")
 
     # Simplify the expression
     simplified_expr = sp.simplify(expr)
@@ -179,8 +186,9 @@ def solve_equation_latex_with_steps(
     expr = parse_latex_expression(latex_eq)
 
     # Create the symbol to solve for
-    var = sp.Symbol(var_name)
-    steps.append(f"Identifying variable to solve for: {var_name}")
+    safe_var_name = validate_variable_name(var_name)
+    var = sp.Symbol(safe_var_name)
+    steps.append(f"Identifying variable to solve for: {safe_var_name}")
 
     # Solve the equation
     solutions = sp.solve(expr, var)
@@ -212,8 +220,9 @@ def differentiate_latex_with_steps(
     expr = parse_latex_expression(latex_expr)
 
     # Create the symbol for differentiation
-    var = sp.Symbol(var_name)
-    steps.append(f"Identifying variable of differentiation: {var_name}")
+    safe_var_name = validate_variable_name(var_name)
+    var = sp.Symbol(safe_var_name)
+    steps.append(f"Identifying variable of differentiation: {safe_var_name}")
 
     # Differentiate the expression
     result = sp.diff(expr, var)
@@ -247,11 +256,12 @@ def limit_latex_with_steps(
     expr = parse_latex_expression(latex_expr)
 
     # Create the symbol and point
-    var = sp.Symbol(var_name)
+    safe_var_name = validate_variable_name(var_name)
+    var = sp.Symbol(safe_var_name)
     pt = parse_latex_expression(
         point,
     )  # Point could also be in LaTeX (e.g., "inf" for infinity)
-    steps.append(f"Identifying limit variable: {var_name} approaching {point}")
+    steps.append(f"Identifying limit variable: {safe_var_name} approaching {point}")
 
     # Calculate the limit
     result = sp.limit(expr, var, pt)
@@ -287,9 +297,12 @@ def series_latex_with_steps(
     expr = parse_latex_expression(latex_expr)
 
     # Create the symbol and point
-    var = sp.Symbol(var_name)
+    safe_var_name = validate_variable_name(var_name)
+    var = sp.Symbol(safe_var_name)
     pt = parse_latex_expression(point)
-    steps.append(f"Identifying series expansion variable: {var_name} around {point}")
+    steps.append(
+        f"Identifying series expansion variable: {safe_var_name} around {point}",
+    )
 
     # Calculate the series expansion
     result = sp.series(expr, var, pt, n=order)

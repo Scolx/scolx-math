@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scolx-math"
-version = "0.1.0"
+version = "1.0.0"
 description = "A Python-based mathematical computation service that provides step-by-step solutions to mathematical problems"
 readme = "README.md"
 requires-python = ">=3.14"
@@ -109,6 +109,29 @@ ignore = [
 # Allow some leniencies in benchmarks
 "benchmarks/**/*" = [
     "BLE001", # Do not catch blind exception
+]
+# Core operations contain intentionally complex logic
+"scolx_math/core/operations.py" = [
+    "C901",    # function too complex
+    "PLR0912", # too many branches
+    "PLR0913", # too many arguments
+    "PLR0915", # too many statements
+]
+# Parsing keeps a local import to avoid circular dependency and boolean flag API
+"scolx_math/core/parsing.py" = [
+    "PLC0415", # import should be at top-level of a file
+    "FBT001",  # boolean-typed positional argument in function definition
+    "FBT002",  # boolean default positional argument
+]
+# Service endpoints accept multiple parameters by design
+"scolx_math/api/service.py" = [
+    "PLR0913", # too many arguments
+    "PLC0415", # local imports for optional deps / avoid circulars
+]
+"scolx_math/api/main.py" = [
+    "C901",    # function too complex
+    "PLR0911", # too many return statements
+    "PLR0912", # too many branches
 ]
 
 [tool.ruff.format]

@@ -65,6 +65,12 @@ services:
     environment:
       UVICORN_WORKERS: "4"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/livez"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 ```
 
 Bring the stack up with:
@@ -90,9 +96,11 @@ Optionally, configure environment-specific deploy jobs that pull the published i
 
 ## Health Checks and Monitoring
 
-The API exposes a FastAPI application with automatic OpenAPI documentation. After deployment:
+The API exposes a FastAPI application with automatic OpenAPI documentation and dedicated health check endpoints. After deployment:
 
-- Verify the service responds: `curl http://<host>:8000/health` (add an HTTP GET if you expose a health endpoint)
+- Verify the service responds: `curl http://<host>:8000/livez` (liveness probe)
+- Check readiness: `curl http://<host>:8000/readyz` (readiness probe)
+- Check startup status: `curl http://<host>:8000/startupz` (startup probe)
 - Access Swagger UI at `http://<host>:8000/docs`
 - Monitor logs using `docker logs` or your orchestration platform
 

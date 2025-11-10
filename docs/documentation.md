@@ -98,10 +98,28 @@ The main endpoint for mathematical computations. Accepts a JSON payload with the
   "type": "string",           // Operation type
   "expression": "string",     // Mathematical expression
   "variable": "string",       // Variable name (optional for some operations)
+  "variables": ["string"],    // Variables for multivariate operations
   "point": "string",          // Point for limit operations (optional)
   "order": "int",             // Order for series expansion (default: 6)
   "steps": "bool",            // Include step-by-step explanation (default: true)
-  "is_latex": "bool"          // Whether expression is in LaTeX format (default: false)
+  "is_latex": "bool",         // Whether expression is in LaTeX format (default: false)
+  "plot_range": ["string", "string"],  // Start and end for plotting
+  "samples": "int",           // Sample count for plotting (default: 100)
+  "matrix": [[...]],          // Matrix input for determinant/inverse
+  "left_matrix": [[...]],     // Left matrix for multiplication
+  "right_matrix": [[...]],    // Right matrix for multiplication
+  "function": "string",       // Function name for ODE solving
+  "initial_conditions": {...}, // Initial conditions for ODE solving
+  "values": [...],            // Values for statistical calculations
+  "sample": "bool",           // Use sample statistics (default: false)
+  "distribution_value": "string", // Value for probability distributions
+  "mean_value": "string",     // Mean parameter for probability distributions
+  "std_value": "string",      // Standard deviation parameter for probability distributions
+  "equations": ["string"],    // System of equations for numeric solving
+  "equation_variables": ["string"], // Variables for numeric solving
+  "initial_guess": [...],     // Initial guess values for numeric solving
+  "max_iterations": "int",    // Maximum iterations for numeric solvers (default: 100)
+  "tolerance": "float"        // Tolerance for numeric solvers (default: 1e-9)
 }
 ```
 
@@ -115,6 +133,24 @@ The main endpoint for mathematical computations. Accepts a JSON payload with the
 | `simplify` | Simplify expression | `expression` |
 | `limit` | Calculate limit (implemented) | `expression`, `variable`, `point` |
 | `series` | Series expansion (implemented) | `expression`, `variable`, `point`, `order` |
+| `gradient` | Calculate gradient of multivariate expression | `expression`, `variables` |
+| `hessian` | Calculate Hessian matrix of multivariate expression | `expression`, `variables` |
+| `matrix_determinant` | Compute determinant of a matrix | `matrix` |
+| `matrix_inverse` | Compute inverse of a matrix | `matrix` |
+| `matrix_multiply` | Multiply two matrices | `left_matrix`, `right_matrix` |
+| `ode` | Solve ordinary differential equation | `expression`, `function`, `variable` |
+| `plot` | Generate points for plotting | `expression`, `variable`, `plot_range` |
+| `complex_conjugate` | Compute complex conjugate | `expression` |
+| `complex_modulus` | Compute complex modulus | `expression` |
+| `complex_argument` | Compute complex argument | `expression` |
+| `complex_to_polar` | Convert complex to polar form | `expression` |
+| `complex_from_polar` | Convert polar to complex form | `radius`, `angle` |
+| `stats_mean` | Compute statistical mean | `values` |
+| `stats_variance` | Compute statistical variance | `values` |
+| `stats_stddev` | Compute statistical standard deviation | `values` |
+| `normal_pdf` | Compute normal probability density function | `distribution_value`, `mean_value`, `std_value` |
+| `normal_cdf` | Compute normal cumulative distribution function | `distribution_value`, `mean_value`, `std_value` |
+| `solve_numeric` | Solve system of equations numerically | `equations`, `equation_variables` |
 | `integral_latex` | LaTeX integral | `expression`, `variable`, `is_latex: true` |
 | `derivative_latex` | LaTeX derivative | `expression`, `variable`, `is_latex: true` |
 | `solve_latex` | LaTeX equation solving | `expression`, `variable`, `is_latex: true` |
@@ -152,6 +188,72 @@ The main endpoint for mathematical computations. Accepts a JSON payload with the
   "variable": "x",
   "steps": true,
   "is_latex": true
+}
+```
+
+#### Gradient Calculation
+```json
+{
+  "type": "gradient",
+  "expression": "x**2 + y**2",
+  "variables": ["x", "y"],
+  "steps": true
+}
+```
+
+#### Matrix Multiplication
+```json
+{
+  "type": "matrix_multiply",
+  "left_matrix": [[1, 2], [3, 4]],
+  "right_matrix": [[5, 6], [7, 8]]
+}
+```
+
+#### ODE Solving
+```json
+{
+  "type": "ode",
+  "expression": "Eq(diff(y(x), x), y(x))",
+  "variable": "x",
+  "function": "y",
+  "initial_conditions": {"y(0)": "1"}
+}
+```
+
+#### Statistics - Mean
+```json
+{
+  "type": "stats_mean",
+  "values": [1, 2, 3, 4, 5]
+}
+```
+
+#### Complex Number - Conjugate
+```json
+{
+  "type": "complex_conjugate",
+  "expression": "3 + 4*I"
+}
+```
+
+#### Plotting
+```json
+{
+  "type": "plot",
+  "expression": "x**2",
+  "variable": "x",
+  "plot_range": ["-5", "5"],
+  "samples": 100
+}
+```
+
+#### Numeric Solving
+```json
+{
+  "type": "solve_numeric",
+  "equations": ["x**2 + y**2 - 4", "x - y"],
+  "equation_variables": ["x", "y"]
 }
 ```
 

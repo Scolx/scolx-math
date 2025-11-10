@@ -12,8 +12,8 @@ def test_latex_integration() -> None:
     response = client.post(
         "/solve",
         json={
-            "type": "integral_latex",
-            "expression": "\\int x^2 \\, dx",
+            "type": "integral",
+            "expression": "x^2",
             "variable": "x",
             "steps": True,
             "is_latex": True,
@@ -23,6 +23,7 @@ def test_latex_integration() -> None:
     data = response.json()
     assert "result" in data
     assert "steps" in data
+    # The result should be equivalent to x^3/3 (though possibly in different form)
 
 
 def test_latex_normalization_handles_left_right() -> None:
@@ -30,7 +31,7 @@ def test_latex_normalization_handles_left_right() -> None:
     response = client.post(
         "/solve",
         json={
-            "type": "derivative_latex",
+            "type": "derivative",
             "expression": "\\left( x^2 + 1 \\right)",
             "variable": "x",
             "steps": False,
@@ -47,7 +48,7 @@ def test_latex_unmatched_braces_returns_error() -> None:
     response = client.post(
         "/solve",
         json={
-            "type": "integral_latex",
+            "type": "integral",
             "expression": "\\frac{1}{x",
             "variable": "x",
             "steps": False,
@@ -65,7 +66,7 @@ def test_latex_differentiation() -> None:
     response = client.post(
         "/solve",
         json={
-            "type": "derivative_latex",
+            "type": "derivative",
             "expression": "x^3",
             "variable": "x",
             "steps": True,
@@ -84,7 +85,7 @@ def test_latex_equation_solving() -> None:
     response = client.post(
         "/solve",
         json={
-            "type": "solve_latex",
+            "type": "solve",
             "expression": "x^2 - 4",
             "variable": "x",
             "steps": True,
@@ -103,7 +104,7 @@ def test_latex_limit() -> None:
     response = client.post(
         "/solve",
         json={
-            "type": "limit_latex",
+            "type": "limit",
             "expression": "\\frac{\\sin(x)}{x}",
             "variable": "x",
             "point": "0",
@@ -122,7 +123,7 @@ def test_latex_series() -> None:
     response = client.post(
         "/solve",
         json={
-            "type": "series_latex",
+            "type": "series",
             "expression": "e^x",
             "variable": "x",
             "point": "0",

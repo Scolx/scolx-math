@@ -9,6 +9,13 @@ The core functionality includes:
 - **Equation solving**
 - **Differentiation**
 - **Expression simplification**
+- **Multivariate calculus** (gradient and Hessian)
+- **Matrix operations** (determinant, inverse, multiplication)
+- **Differential equations** (analytical and numerical)
+- **Complex number operations**
+- **Statistics and probability functions**
+- **Plotting and visualization**
+- **Numeric solvers**
 - **FastAPI-based REST API** for integration with AI systems
 
 The project uses SymPy for symbolic computation and FastAPI for the web interface, with Pydantic for data validation.
@@ -73,10 +80,31 @@ scolx-math/
   - `simplify_expr(expr)`: Simplify expressions
   - `limit_expr(expr, var, point)`: Calculate limits
   - `series_expr(expr, var, point, order)`: Calculate series expansion
+  - `solve_ode(equation, function, variable, initial_conditions, numeric, ...)` : Solve ordinary differential equations (analytical and numerical)
+  - `matrix_determinant(matrix)`: Compute determinant of a matrix
+  - `matrix_inverse(matrix)`: Compute inverse of a matrix
+  - `matrix_multiply(left, right)`: Multiply two matrices
+  - `complex_conjugate_expr(expr)`: Compute complex conjugate
+  - `complex_modulus_expr(expr)`: Compute complex modulus
+  - `complex_argument_expr(expr)`: Compute complex argument
+  - `complex_to_polar_expr(expr)`: Convert complex to polar form
+  - `complex_from_polar_expr(radius, angle)`: Convert polar to complex form
+  - `stats_mean(values)`: Compute statistical mean
+  - `stats_variance(values, sample)`: Compute statistical variance
+  - `stats_standard_deviation(values, sample)`: Compute statistical standard deviation
+  - `normal_pdf(value, mean, std)`: Compute normal probability density function
+  - `normal_cdf(value, mean, std)`: Compute normal cumulative distribution function
+  - `solve_system_numeric(equations, variables, initial_guess, max_iterations, tolerance)`: Solve system of equations numerically
+  - `generate_plot_points(expr, variable, start, end, samples)`: Generate points for plotting
 
 ### Step-by-Step Explanations
 - `scolx_math.explain.explainers`: Provides functions that generate detailed steps:
   - `integrate_with_steps(expr, var)`: Integration with explanation steps
+  - `differentiate_with_steps(expr, var)`: Differentiation with explanation steps
+  - `solve_with_steps(expr, var)`: Equation solving with explanation steps
+  - `limit_with_steps(expr, var, point)`: Limit calculation with explanation steps
+  - `series_with_steps(expr, var, point, order)`: Series expansion with explanation steps
+  - `simplify_with_steps(expr)`: Simplification with explanation steps
 
 ### LaTeX Processing
 - `scolx_math.advanced_latex`: New module for LaTeX parsing and advanced operations:
@@ -89,9 +117,12 @@ scolx-math/
 
 ### API Endpoints
 - `/solve`: Main endpoint that accepts mathematical problems and returns solutions with optional step-by-step explanations
-- Supports different problem types: integrals, derivatives, equation solving, simplification, limits, series expansion (all implemented for both plain text and LaTeX)
+- `/livez`: Liveness probe
+- `/readyz`: Readiness probe
+- `/startupz`: Startup probe
+- Supports different problem types: integrals, derivatives, equation solving, simplification, limits, series expansion, gradient, Hessian, matrix operations, ODE solving, complex numbers, statistics, plotting, and numeric solving (all implemented for both plain text and LaTeX)
 - Supports both plain text and LaTeX expressions via the `is_latex` flag
-- New parameters: `point` for limit operations, `order` for series expansion
+- New parameters: `point` for limit operations, `order` for series expansion, `variables` for multivariate operations, `plot_range` for plotting, `matrix` for matrix operations, and many more
 - Uses Pydantic models for request/response validation
 - Comprehensive validation and error handling for all operation types
 
@@ -103,9 +134,44 @@ scolx-math/
 
 ### Plain-Text Operations
 - All mathematical operations now fully implemented for plain-text expressions
-- Integration, differentiation, equation solving, simplification, limits, and series expansion
+- Integration, differentiation, equation solving, simplification, limits, series expansion, gradient, Hessian, matrix operations, ODE solving, complex numbers, statistics, plotting, and numeric solving
 - Safe expression parsing with whitelisted functions and constants
 - Optional SymEngine acceleration for faster computations
+
+### Multivariate Calculus
+- `gradient` operation: Calculate gradient of multivariate expressions
+- `hessian` operation: Calculate Hessian matrix of multivariate expressions
+
+### Matrix Operations
+- `matrix_determinant`: Compute determinant of a matrix
+- `matrix_inverse`: Compute inverse of a matrix
+- `matrix_multiply`: Multiply two matrices
+
+### Differential Equations
+- `ode` operation: Solve ordinary differential equations (analytical and numerical)
+- Support for initial conditions and numeric solving
+
+### Complex Numbers
+- `complex_conjugate`: Compute complex conjugate
+- `complex_modulus`: Compute complex modulus
+- `complex_argument`: Compute complex argument
+- `complex_to_polar`: Convert complex to polar form
+- `complex_from_polar`: Convert polar to complex form
+
+### Statistics and Probability
+- `stats_mean`: Compute statistical mean
+- `stats_variance`: Compute statistical variance
+- `stats_stddev`: Compute statistical standard deviation
+- `normal_pdf`: Compute normal probability density function
+- `normal_cdf`: Compute normal cumulative distribution function
+
+### Plotting and Visualization
+- `plot` operation: Generate points for plotting expressions over a range
+- Returns list of {x, y} points that can be used with charting libraries
+
+### Numeric Solvers
+- `solve_numeric` operation: Solve systems of equations numerically
+- Support for initial guesses, maximum iterations, and tolerance settings
 
 ## Building and Running
 

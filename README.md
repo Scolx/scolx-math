@@ -1,14 +1,15 @@
 # Scolx Math API
 
-Scolx Math API is a Python-based mathematical computation service that provides step-by-step solutions to mathematical problems. It supports both plain text and LaTeX mathematical expressions, offering integration, differentiation, equation solving, simplification, limits, and series expansion capabilities.
+Scolx Math API is a Python-based mathematical computation service that provides step-by-step solutions to mathematical problems. It supports both plain text and LaTeX mathematical expressions, offering integration, differentiation, equation solving, simplification, limits, series expansion, gradient, Hessian, matrix operations, differential equations, complex numbers, statistics, plotting, and numeric solving capabilities.
 
 ## Features
 
 - **Plain-Text Operations**: Integration, differentiation, gradient and Hessian computation, matrix algebra (determinant, inverse, multiply), differential equation solving (analytic with SymPy or numeric via SciPy), complex number utilities, statistics/probability functions, numeric root solving, plotting samples, equation solving, and simplification using a hardened SymPy parser with optional SymEngine acceleration
-- **LaTeX Operations**: Integration, differentiation, solving, limits, and series expansion with detailed steps
+- **LaTeX Operations**: Integration, differentiation, solving, limits, series expansion, gradient, Hessian, matrix operations, ODE, complex numbers, statistics, and numeric solving with detailed steps
 - **Step-by-Step Explanations**: Optional breakdown for supported operations
 - **RESTful API**: FastAPI-based web service with structured validation and error handling
 - **Flexible Input**: Safe plain-text parsing plus dedicated LaTeX workflows
+- **Health Checks**: Built-in health check endpoints for liveness, readiness, and startup
 
 ## Installation
 
@@ -130,6 +131,42 @@ Once running, you can access:
 }
 ```
 
+#### Statistics - Mean Calculation
+```json
+{
+  "type": "stats_mean",
+  "values": [1, 2, 3, 4, 5]
+}
+```
+
+#### Complex Number - Conjugate
+```json
+{
+  "type": "complex_conjugate",
+  "expression": "3 + 4*I"
+}
+```
+
+#### Plotting
+```json
+{
+  "type": "plot",
+  "expression": "x**2",
+  "variable": "x",
+  "plot_range": ["-5", "5"],
+  "samples": 100
+}
+```
+
+#### Numeric Solving
+```json
+{
+  "type": "solve_numeric",
+  "equations": ["x**2 + y**2 - 4", "x - y"],
+  "equation_variables": ["x", "y"]
+}
+```
+
 ### Using the Python Modules Directly
 
 ```python
@@ -199,6 +236,8 @@ The API performs rigorous request validation. Invalid payloads return `422 Unpro
 - `uvicorn[standard]`: ASGI server
 - `sympy`: Symbolic mathematics
 - `symengine`: Optional acceleration backend used when available
+- `numpy`: Numerical computations
+- `scipy`: Scientific computing
 - `pydantic`: Data validation
 - `antlr4-python3-runtime==4.11`: ANTLR runtime for LaTeX parsing
 

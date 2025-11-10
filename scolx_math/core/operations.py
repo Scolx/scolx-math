@@ -619,7 +619,7 @@ def stats_variance(values: Sequence[object], *, sample: bool) -> sp.Expr:
 def stats_standard_deviation(values: Sequence[object], *, sample: bool) -> sp.Expr:
     """Compute standard deviation for the supplied values."""
 
-    variance_expr = stats_variance(values, sample)
+    variance_expr = stats_variance(values, sample=sample)
     return sp.simplify(sp.sqrt(variance_expr))
 
 

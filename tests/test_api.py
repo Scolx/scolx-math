@@ -4,13 +4,14 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from requests import Response
 
 from scolx_math.api.main import app
 
 client = TestClient(app)
 
 
-def _post(payload: dict[str, Any]) -> Any:
+def _post(payload: dict[str, Any]) -> Response:
     return client.post("/solve", json=payload)
 
 

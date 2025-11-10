@@ -86,6 +86,7 @@ class MathOperationService:
     async def handle_integral_latex(
         expression: str,
         variable: str,
+        *,
         steps: bool,
     ) -> dict[str, Any]:
         """Handle LaTeX integral operations.
@@ -116,6 +117,7 @@ class MathOperationService:
     async def handle_derivative_latex(
         expression: str,
         variable: str,
+        *,
         steps: bool,
     ) -> dict[str, Any]:
         """Handle LaTeX derivative operations.
@@ -146,6 +148,7 @@ class MathOperationService:
     async def handle_solve_latex(
         expression: str,
         variable: str,
+        *,
         steps: bool,
     ) -> dict[str, Any]:
         """Handle LaTeX equation solving operations.
@@ -176,6 +179,7 @@ class MathOperationService:
     async def handle_gradient(
         expression: str,
         variables: list[str],
+        *,
         steps: bool,
     ) -> dict[str, Any]:
         """Handle gradient calculations for multivariate expressions."""
@@ -204,6 +208,7 @@ class MathOperationService:
         function: str,
         variable: str,
         initial_conditions: dict[str, str] | None,
+        *,
         numeric: bool,
         numeric_start: str | None,
         numeric_end: str | None,
@@ -335,6 +340,7 @@ class MathOperationService:
     @staticmethod
     async def handle_stats_variance(
         values: list[object],
+        *,
         sample: bool,
     ) -> dict[str, Any]:
         try:
@@ -345,7 +351,11 @@ class MathOperationService:
         return {"result": _stringify_result(result)}
 
     @staticmethod
-    async def handle_stats_stddev(values: list[object], sample: bool) -> dict[str, Any]:
+    async def handle_stats_stddev(
+        values: list[object],
+        *,
+        sample: bool,
+    ) -> dict[str, Any]:
         try:
             result = await run_cpu_bound_async(stats_standard_deviation, values, sample)
         except Exception as e:  # pragma: no cover - defensive
@@ -398,6 +408,7 @@ class MathOperationService:
     async def handle_hessian(
         expression: str,
         variables: list[str],
+        *,
         steps: bool,
     ) -> dict[str, Any]:
         """Handle Hessian matrix calculations for multivariate expressions."""
@@ -429,6 +440,7 @@ class MathOperationService:
         expression: str,
         variable: str,
         point: str,
+        *,
         steps: bool,
     ) -> dict[str, Any]:
         """Handle LaTeX limit operations.
@@ -463,6 +475,7 @@ class MathOperationService:
         variable: str,
         point: str,
         order: int,
+        *,
         steps: bool,
     ) -> dict[str, Any]:
         """Handle LaTeX series operations.
@@ -522,6 +535,7 @@ class MathOperationService:
     async def handle_integral(
         expression: str,
         variable: str,
+        *,
         steps: bool,
     ) -> dict[str, Any]:
         """Handle plain text integral operations.
@@ -555,6 +569,7 @@ class MathOperationService:
     async def handle_derivative(
         expression: str,
         variable: str,
+        *,
         steps: bool,
     ) -> dict[str, Any]:
         """Handle plain text derivative operations.
@@ -586,6 +601,7 @@ class MathOperationService:
     async def handle_solve(
         expression: str,
         variable: str,
+        *,
         steps: bool,
     ) -> dict[str, Any]:
         """Handle plain text equation solving operations.
@@ -617,7 +633,7 @@ class MathOperationService:
             raise ValueError(error_msg) from e
 
     @staticmethod
-    async def handle_simplify(expression: str, steps: bool) -> dict[str, Any]:
+    async def handle_simplify(expression: str, *, steps: bool) -> dict[str, Any]:
         """Handle plain text simplification operations.
 
         Args:
@@ -646,6 +662,7 @@ class MathOperationService:
         expression: str,
         variable: str,
         point: str,
+        *,
         steps: bool,
     ) -> dict[str, Any]:
         """Handle plain text limit operations.
@@ -688,6 +705,7 @@ class MathOperationService:
         variable: str,
         point: str,
         order: int,
+        *,
         steps: bool,
     ) -> dict[str, Any]:
         """Handle plain text series operations.

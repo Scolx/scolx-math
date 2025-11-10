@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import math
 
 try:  # pragma: no cover - optional dependency
@@ -46,6 +47,8 @@ from scolx_math.core.parsing import (
     validate_variable_name,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def _symengine_symbol(name: str) -> object:
     """Create a SymEngine symbol if SymEngine is available."""
@@ -57,7 +60,7 @@ def _symengine_symbol(name: str) -> object:
         return None
 
 
-def _symengine_expr(expr) -> object:
+def _symengine_expr(expr: object) -> object:
     """Convert expression to SymEngine if available."""
     if se is None:
         return None
@@ -67,7 +70,7 @@ def _symengine_expr(expr) -> object:
         return None
 
 
-def _symengine_to_sympy(result) -> object:
+def _symengine_to_sympy(result: object) -> object:
     """Convert SymEngine result back to SymPy."""
     if result is None:
         return None
@@ -79,7 +82,7 @@ def _symengine_to_sympy(result) -> object:
         return None
 
 
-def _symengine_simplify(expr) -> object:
+def _symengine_simplify(expr: object) -> object:
     """Simplify expression using SymEngine if available."""
     se_expr = _symengine_expr(expr)
     if se_expr is None:
@@ -91,7 +94,7 @@ def _symengine_simplify(expr) -> object:
     return _symengine_to_sympy(simplified)
 
 
-def _symengine_diff(expr, var_name: str) -> object:
+def _symengine_diff(expr: object, var_name: str) -> object:
     """Differentiate expression using SymEngine if available."""
     se_expr = _symengine_expr(expr)
     if se_expr is None:
@@ -106,7 +109,7 @@ def _symengine_diff(expr, var_name: str) -> object:
     return _symengine_to_sympy(result)
 
 
-def _symengine_integrate(expr, var_name: str) -> object:
+def _symengine_integrate(expr: object, var_name: str) -> object:
     """Integrate expression using SymEngine if available."""
     se_expr = _symengine_expr(expr)
     if se_expr is None:
@@ -137,6 +140,52 @@ def _symengine_matrix_from_matrix(matrix: Matrix) -> object:
         return se.DenseMatrix(rows)
     except Exception:  # pragma: no cover - optional path
         return None
+
+
+def _symengine_matrix_to_sympy(se_matrix: object) -> Matrix | None:
+    """Convert a SymEngine matrix to a SymPy Matrix."""
+    if se_matrix is None:
+        return None
+    try:
+        rows = []
+        for i in range(se_matrix.nrows()):
+            row = []
+            for j in range(se_matrix.ncols()):
+                entry = se_matrix[i, j]
+                sympy_entry = _symengine_to_sympy(entry)
+                row.append(
+                    sympy_entry if sympy_entry is not None else sp_sympify(str(entry)),
+                )
+            rows.append(row)
+        return Matrix(rows)
+    except Exception:  # pragma: no cover - optional path
+        return None
+
+
+def _parse_matrix(matrix_data: list[list[object]]) -> Matrix:
+    """Parse a list of lists into a SymPy Matrix."""
+    if not matrix_data:
+        raise ValueError("Matrix cannot be empty.")
+    try:
+        return Matrix(matrix_data)
+    except Exception as exc:
+        raise ValueError("Invalid matrix data.") from exc
+
+
+def _parse_numeric_sequence(values: Sequence[object]) -> list[sp.Expr]:
+    """Parse a sequence of values into SymPy expressions."""
+    if not values:
+        raise ValueError("Values sequence cannot be empty.")
+    parsed = []
+    for val in values:
+        if isinstance(val, sp.Expr):
+            parsed.append(val)
+        else:
+            try:
+                parsed.append(sp_sympify(val))
+            except Exception as exc:
+                raise ValueError(f"Invalid numeric value: {val}") from exc
+    return parsed
 
 
 def solve_equation(expr_str: str, var_str: str) -> list:
@@ -270,7 +319,11 @@ def matrix_determinant(matrix_data: list[list[object]]) -> Basic:
             if converted is not None:
                 return converted
         except Exception:  # pragma: no cover - optional path
-            pass
+            # SymEngine failed, fallback to SymPy
+            logger.debug(
+                "SymEngine determinant failed; falling back to SymPy.",
+                exc_info=True,
+            )
     return matrix.det()
 
 
@@ -288,7 +341,11 @@ def matrix_inverse(matrix_data: list[list[object]]) -> Matrix:
             if converted is not None:
                 return converted
         except Exception:  # pragma: no cover - optional path
-            pass
+            # SymEngine failed, fallback to SymPy
+            logger.debug(
+                "SymEngine inverse failed; falling back to SymPy.",
+                exc_info=True,
+            )
 
     try:
         return matrix.inv()
@@ -317,7 +374,11 @@ def matrix_multiply(
             if converted is not None:
                 return converted
         except Exception:  # pragma: no cover - optional path
-            pass
+            # SymEngine failed, fallback to SymPy
+            logger.debug(
+                "SymEngine multiply failed; falling back to SymPy.",
+                exc_info=True,
+            )
     return left * right
 
 
@@ -326,6 +387,7 @@ def solve_ode(
     func_name: str,
     indep_var: str,
     ics: dict[str, str] | None = None,
+    *,
     numeric: bool = False,
     numeric_start: str | None = None,
     numeric_end: str | None = None,
@@ -367,13 +429,12 @@ def solve_ode(
     analytic_allowed = not numeric
     if analytic_allowed:
         try:
-            result = dsolve(ode_expr, func_symbol, ics=sympy_ics)
-            return result
-        except Exception:
+            return dsolve(ode_expr, func_symbol, ics=sympy_ics)
+        except Exception as exc:
             if numeric_start is None or numeric_end is None:
                 raise ValueError(
                     "Unable to solve the differential equation analytically. Provide numeric=True with numeric_range to use numerical methods.",
-                )
+                ) from exc
             numeric = True
 
     if solve_ivp is None:
@@ -456,7 +517,7 @@ def solve_ode(
     times = solution.t if t_eval is not None else np.linspace(t0, tf, num_samples)
     values = solution.y[0]
     points: list[dict[str, float | None]] = []
-    for t_val, y_val in zip(times, values):
+    for t_val, y_val in zip(times, values, strict=True):
         try:
             t_float = float(t_val)
             y_float = float(y_val)
@@ -502,14 +563,17 @@ def generate_plot_points(
             if y_array.shape != x_values.shape:
                 y_array = np.resize(y_array, x_values.shape)
             points = []
-            for x_val, y_val in zip(x_values, y_array):
+            for x_val, y_val in zip(x_values, y_array, strict=True):
                 if math.isfinite(float(y_val)):
                     points.append({"x": float(x_val), "y": float(y_val)})
                 else:
                     points.append({"x": float(x_val), "y": None})
             return points
         except Exception:  # pragma: no cover - optional path
-            pass
+            logger.debug(
+                "NumPy vectorized plot evaluation failed; using scalar loop.",
+                exc_info=True,
+            )
 
     step = (end - start) / (num_samples - 1)
     points: list[dict[str, float | None]] = []
@@ -537,12 +601,13 @@ def stats_mean(values: Sequence[object]) -> sp.Expr:
     return sp.simplify(mean_expr)
 
 
-def stats_variance(values: Sequence[object], sample: bool) -> sp.Expr:
+def stats_variance(values: Sequence[object], *, sample: bool) -> sp.Expr:
     """Compute variance (population or sample) of the supplied values."""
 
     data = _parse_numeric_sequence(values)
     count = len(data)
-    if sample and count < 2:
+    _MIN_SAMPLE_SIZE = 2
+    if sample and count < _MIN_SAMPLE_SIZE:
         raise ValueError("At least two values are required for sample variance.")
 
     mean_expr = stats_mean(values)
@@ -551,7 +616,7 @@ def stats_variance(values: Sequence[object], sample: bool) -> sp.Expr:
     return sp.simplify(variance_expr)
 
 
-def stats_standard_deviation(values: Sequence[object], sample: bool) -> sp.Expr:
+def stats_standard_deviation(values: Sequence[object], *, sample: bool) -> sp.Expr:
     """Compute standard deviation for the supplied values."""
 
     variance_expr = stats_variance(values, sample)
@@ -697,7 +762,7 @@ def solve_system_numeric(
         raise ValueError(f"Numeric solver failed: {solution.message}")
 
     solved_values: dict[str, float] = {}
-    for name, value in zip(variables, solution.x):
+    for name, value in zip(variables, solution.x, strict=False):
         solved_values[name] = float(value)
     return solved_values
 
@@ -712,8 +777,7 @@ def gradient_expr(expr_str: str, variables: list[str]) -> list[sp.Expr]:
     expr = parse_plain_expression(expr_str, variables=var_names)
     sym_vars = symbols(var_names)
 
-    gradient = [diff(expr, sym_var) for sym_var in sym_vars]
-    return gradient
+    return [diff(expr, sym_var) for sym_var in sym_vars]
 
 
 def hessian_expr(expr_str: str, variables: list[str]) -> Matrix:

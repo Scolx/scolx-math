@@ -3,7 +3,6 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from enum import Enum
-from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exception_handlers import request_validation_exception_handler
@@ -97,11 +96,14 @@ EXPRESSION_REQUIRED = {
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     """Lifespan event handler for application startup and shutdown."""
-    yield  # Application startup
-    # Application shutdown
-    cleanup_threadpool()
+    try:
+        # Application startup
+        yield
+    finally:
+        # Application shutdown
+        cleanup_threadpool()
 
 
 app = FastAPI(title="Scolx Math API", lifespan=lifespan)
@@ -145,9 +147,9 @@ class MathRequest(BaseModel):
     )
     point: str | None = Field(None, description="Point for limit/series operations")
     order: int = Field(6, description="Series expansion order")
-    steps: bool = Field(True, description="Include step-by-step explanations")
+    steps: bool = Field(default=True, description="Include step-by-step explanations")
     is_latex: bool = Field(
-        False,
+        default=False,
         description="Whether expression is provided as LaTeX (redundant for *_latex types)",
     )
     plot_range: tuple[str, str] | None = Field(
@@ -164,16 +166,19 @@ class MathRequest(BaseModel):
         le=1000,
         description="Sample count for plotting or numeric solutions",
     )
-    numeric: bool = Field(False, description="Use numeric methods when available")
-    matrix: list[list[Any]] | None = Field(
+    numeric: bool = Field(
+        default=False,
+        description="Use numeric methods when available",
+    )
+    matrix: list[list[object]] | None = Field(
         None,
         description="Matrix input for determinant/inverse operations",
     )
-    left_matrix: list[list[Any]] | None = Field(
+    left_matrix: list[list[object]] | None = Field(
         None,
         description="Left matrix for multiplication",
     )
-    right_matrix: list[list[Any]] | None = Field(
+    right_matrix: list[list[object]] | None = Field(
         None,
         description="Right matrix for multiplication",
     )
@@ -194,7 +199,10 @@ class MathRequest(BaseModel):
         None,
         description="Values for statistical calculations",
     )
-    sample: bool = Field(False, description="Use sample statistics when applicable")
+    sample: bool = Field(
+        default=False,
+        description="Use sample statistics when applicable",
+    )
     distribution_value: str | None = Field(
         None,
         description="Value at which to evaluate probability distributions",
@@ -238,7 +246,7 @@ class MathRequest(BaseModel):
 
     @field_validator("variable", "point", mode="before")
     @classmethod
-    def _normalize_optional(cls, value: Any) -> Any:
+    def _normalize_optional(cls, value: str | None) -> str | None:
         """Normalize optional string fields."""
         if isinstance(value, str):
             value = value.strip()
@@ -246,7 +254,7 @@ class MathRequest(BaseModel):
 
     @field_validator("matrix", "left_matrix", "right_matrix", mode="before")
     @classmethod
-    def _normalize_matrices(cls, value: Any) -> list[list[Any]] | None:
+    def _normalize_matrices(cls, value: object) -> list[list[object]] | None:
         """Ensure matrices are lists of lists and normalize tuples."""
 
         if value is None:
@@ -257,25 +265,25 @@ class MathRequest(BaseModel):
         if not isinstance(value, list):
             raise TypeError("Matrix must be provided as a list of lists.")
 
-        normalized: list[list[Any]] = []
+        normalized: list[list[object]] = []
         for row in value:
-            if isinstance(row, tuple):
-                row = list(row)
-            if not isinstance(row, list):
+            converted_row = list(row) if isinstance(row, tuple) else row
+            if not isinstance(converted_row, list):
                 raise TypeError("Matrix rows must be provided as lists.")
-            normalized.append(list(row))
+            normalized.append(list(converted_row))
 
         return normalized
 
     @field_validator("plot_range", mode="before")
     @classmethod
-    def _normalize_plot_range(cls, value: Any) -> tuple[str, str] | None:
+    def _normalize_plot_range(cls, value: object) -> tuple[str, str] | None:
         """Normalize plot range to a tuple of two strings."""
 
         if value is None:
             return None
 
-        if isinstance(value, (list, tuple)) and len(value) == 2:
+        _RANGE_LENGTH = 2
+        if isinstance(value, (list, tuple)) and len(value) == _RANGE_LENGTH:
             start, end = value
             if not isinstance(start, str) or not isinstance(end, str):
                 raise TypeError("Plot range must contain two string expressions.")
@@ -289,13 +297,14 @@ class MathRequest(BaseModel):
 
     @field_validator("numeric_range", mode="before")
     @classmethod
-    def _normalize_numeric_range(cls, value: Any) -> tuple[str, str] | None:
+    def _normalize_numeric_range(cls, value: object) -> tuple[str, str] | None:
         """Normalize numeric range for ODE solving."""
 
         if value is None:
             return None
 
-        if isinstance(value, (list, tuple)) and len(value) == 2:
+        _RANGE_LENGTH = 2
+        if isinstance(value, (list, tuple)) and len(value) == _RANGE_LENGTH:
             start, end = value
             if not isinstance(start, str) or not isinstance(end, str):
                 raise TypeError("Numeric range must contain two string expressions.")
@@ -309,14 +318,14 @@ class MathRequest(BaseModel):
 
     @field_validator("distribution_value", "mean_value", "std_value", mode="before")
     @classmethod
-    def _strip_optional(cls, value: Any) -> Any:
+    def _strip_optional(cls, value: str | None) -> str | None:
         if isinstance(value, str):
             value = value.strip()
         return value or None
 
     @field_validator("equations", mode="before")
     @classmethod
-    def _normalize_equations(cls, value: Any) -> list[str] | None:
+    def _normalize_equations(cls, value: object) -> list[str] | None:
         if value is None:
             return None
         if not isinstance(value, (list, tuple)):
@@ -332,7 +341,7 @@ class MathRequest(BaseModel):
 
     @field_validator("equation_variables", mode="before")
     @classmethod
-    def _normalize_equation_variables(cls, value: Any) -> list[str] | None:
+    def _normalize_equation_variables(cls, value: object) -> list[str] | None:
         if value is None:
             return None
         if not isinstance(value, (list, tuple)):
@@ -348,7 +357,7 @@ class MathRequest(BaseModel):
 
     @field_validator("variables", mode="before")
     @classmethod
-    def _normalize_variables(cls, value: Any) -> list[str] | None:
+    def _normalize_variables(cls, value: object) -> list[str] | None:
         """Normalize variables list for multivariate operations."""
 
         if value is None:
@@ -504,15 +513,15 @@ class MathRequest(BaseModel):
         return self.variables
 
     @property
-    def matrix_data(self) -> list[list[Any]] | None:
+    def matrix_data(self) -> list[list[object]] | None:
         return self.matrix
 
     @property
-    def left_matrix_data(self) -> list[list[Any]] | None:
+    def left_matrix_data(self) -> list[list[object]] | None:
         return self.left_matrix
 
     @property
-    def right_matrix_data(self) -> list[list[Any]] | None:
+    def right_matrix_data(self) -> list[list[object]] | None:
         return self.right_matrix
 
     @property
@@ -565,7 +574,7 @@ class MathRequest(BaseModel):
 
 
 @app.post("/solve")
-async def solve_math(req: MathRequest):
+async def solve_math(req: MathRequest) -> dict[str, object]:
     """Solve mathematical operations.
 
     This endpoint handles various mathematical operations including integration,
@@ -585,26 +594,26 @@ async def solve_math(req: MathRequest):
             return await MathOperationService.handle_integral_latex(
                 req.expression,
                 req.variable,
-                req.steps,
+                steps=req.steps,
             )
         if req.type is OperationType.DERIVATIVE_LATEX:
             return await MathOperationService.handle_derivative_latex(
                 req.expression,
                 req.variable,
-                req.steps,
+                steps=req.steps,
             )
         if req.type is OperationType.SOLVE_LATEX:
             return await MathOperationService.handle_solve_latex(
                 req.expression,
                 req.variable,
-                req.steps,
+                steps=req.steps,
             )
         if req.type is OperationType.LIMIT_LATEX:
             return await MathOperationService.handle_limit_latex(
                 req.expression,
                 req.variable,
                 req.point,
-                req.steps,
+                steps=req.steps,
             )
         if req.type is OperationType.SERIES_LATEX:
             return await MathOperationService.handle_series_latex(
@@ -612,7 +621,7 @@ async def solve_math(req: MathRequest):
                 req.variable,
                 req.point,
                 req.order,
-                req.steps,
+                steps=req.steps,
             )
 
         # Plain text operations
@@ -620,28 +629,31 @@ async def solve_math(req: MathRequest):
             return await MathOperationService.handle_integral(
                 req.expression,
                 req.variable,
-                req.steps,
+                steps=req.steps,
             )
         if req.type is OperationType.DERIVATIVE:
             return await MathOperationService.handle_derivative(
                 req.expression,
                 req.variable,
-                req.steps,
+                steps=req.steps,
             )
         if req.type is OperationType.SOLVE:
             return await MathOperationService.handle_solve(
                 req.expression,
                 req.variable,
-                req.steps,
+                steps=req.steps,
             )
         if req.type is OperationType.SIMPLIFY:
-            return await MathOperationService.handle_simplify(req.expression, req.steps)
+            return await MathOperationService.handle_simplify(
+                req.expression,
+                steps=req.steps,
+            )
         if req.type is OperationType.LIMIT:
             return await MathOperationService.handle_limit(
                 req.expression,
                 req.variable,
                 req.point,
-                req.steps,
+                steps=req.steps,
             )
         if req.type is OperationType.SERIES:
             return await MathOperationService.handle_series(
@@ -649,7 +661,7 @@ async def solve_math(req: MathRequest):
                 req.variable,
                 req.point,
                 req.order,
-                req.steps,
+                steps=req.steps,
             )
         if req.type is OperationType.MATRIX_DETERMINANT:
             return await MathOperationService.handle_matrix_determinant(
@@ -668,13 +680,13 @@ async def solve_math(req: MathRequest):
             return await MathOperationService.handle_gradient(
                 req.expression,
                 req.ordered_variables or [],
-                req.steps,
+                steps=req.steps,
             )
         if req.type is OperationType.HESSIAN:
             return await MathOperationService.handle_hessian(
                 req.expression,
                 req.ordered_variables or [],
-                req.steps,
+                steps=req.steps,
             )
         if req.type is OperationType.ODE:
             return await MathOperationService.handle_ode(
@@ -682,10 +694,10 @@ async def solve_math(req: MathRequest):
                 req.function,
                 req.variable,
                 req.ode_initial_conditions,
-                req.numeric,
-                req.numeric_start,
-                req.numeric_end,
-                req.samples,
+                numeric=req.numeric,
+                numeric_start=req.numeric_start,
+                numeric_end=req.numeric_end,
+                samples=req.samples,
             )
         if req.type is OperationType.COMPLEX_CONJUGATE:
             return await MathOperationService.handle_complex_conjugate(req.expression)
@@ -705,12 +717,12 @@ async def solve_math(req: MathRequest):
         if req.type is OperationType.STATS_VARIANCE:
             return await MathOperationService.handle_stats_variance(
                 req.stats_values or [],
-                req.sample,
+                sample=req.sample,
             )
         if req.type is OperationType.STATS_STDDEV:
             return await MathOperationService.handle_stats_stddev(
                 req.stats_values or [],
-                req.sample,
+                sample=req.sample,
             )
         if req.type is OperationType.NORMAL_PDF:
             value, mean, std = req.distribution_parameters

@@ -96,6 +96,8 @@ select = [
 ignore = [
     "E501",  # Line too long (handled by Black)
     "EM",    # flake8-errmsg - allow string literals in exceptions
+    "BLE001",  # Allow blind exception catching (sometimes necessary for defensive programming)
+    "PLW0603",  # Allow global statements in appropriate contexts (like managing thread pools)
 ]
 
 [tool.ruff.lint.per-file-ignores]

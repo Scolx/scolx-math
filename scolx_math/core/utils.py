@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from typing import ParamSpec, TypeVar
@@ -21,8 +22,6 @@ def get_threadpool_executor() -> ThreadPoolExecutor:
     global _threadpool_executor
     if _threadpool_executor is None:
         # Use number of CPU cores for optimal performance
-        import os
-
         max_workers = min(32, (os.cpu_count() or 1) + 4)
         _threadpool_executor = ThreadPoolExecutor(
             max_workers=max_workers,

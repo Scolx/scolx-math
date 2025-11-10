@@ -1,9 +1,9 @@
 # Scolx Math API - Development Roadmap
 
 ## Completed Features
-- ✅ Hardened plain-text mathematical operations (integration, differentiation, solving equations, simplification)
+- ✅ Hardened plain-text mathematical operations (integration, differentiation, solving equations, simplification, limits, series)
 - ✅ FastAPI-based REST API with request validation and error handling
-- ✅ Step-by-step explanations for mathematical operations
+- ✅ Step-by-Step explanations for mathematical operations
 - ✅ LaTeX parsing support
 - ✅ Support for both plain text and LaTeX expressions
 - ✅ Integration with SymPy for symbolic computation
@@ -12,7 +12,7 @@
 - ✅ Comprehensive test suite (API, LaTeX, and smoke tests)
 - ✅ Safe expression parsing with whitelisted functions and constants
 - ✅ Optional SymEngine acceleration for faster computations
-- ✅ Support for limits and series expansion with LaTeX
+- ✅ Support for limits and series expansion (both plain text and LaTeX)
 - ✅ Proper error handling and validation for all operations
 
 ## Planned Features
@@ -32,7 +32,7 @@
 - 🔲 Internationalization support
 - 🔲 API rate limiting
 - 🔲 Authentication for production deployments
-- 🔲 Docker containerization
+- ✅ Docker containerization (Note: Implementation may vary)
 - 🔲 CI/CD pipeline setup
 
 ## Bug Fixes
@@ -41,8 +41,8 @@
 - 🔲 Improve handling of unsolvable equations
 
 ## Documentation
-- 🔲 API reference with detailed parameter descriptions
-- 🔲 User guide with common use cases
-- 🔲 Advanced usage examples
+- ✅ API reference with detailed parameter descriptions
+- ✅ User guide with common use cases
+- ✅ Advanced usage examples
 - ✅ Contributing guidelines
 - 🔲 Deployment guide for production environments

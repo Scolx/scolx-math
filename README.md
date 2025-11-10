@@ -141,7 +141,7 @@ Run the test suite with:
 pytest
 ```
 
-Plain-text limit and series operations are not yet implemented; attempting to call them returns `501 Not Implemented`. Integration, differentiation, and simplification automatically leverage SymEngine when available for faster results.
+All mathematical operations are now implemented including limits and series expansion for both plain text and LaTeX expressions. Integration, differentiation, and simplification automatically leverage SymEngine when available for faster results.
 
 ## Error Handling
 

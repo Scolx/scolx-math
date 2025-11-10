@@ -71,6 +71,8 @@ scolx-math/
   - `integrate_expr(expr, var)`: Perform integration
   - `differentiate_expr(expr, var)`: Perform differentiation
   - `simplify_expr(expr)`: Simplify expressions
+  - `limit_expr(expr, var, point)`: Calculate limits
+  - `series_expr(expr, var, point, order)`: Calculate series expansion
 
 ### Step-by-Step Explanations
 - `scolx_math.explain.explainers`: Provides functions that generate detailed steps:
@@ -87,16 +89,23 @@ scolx-math/
 
 ### API Endpoints
 - `/solve`: Main endpoint that accepts mathematical problems and returns solutions with optional step-by-step explanations
-- Supports different problem types: integrals, derivatives, equation solving, simplification, limits, series expansion
+- Supports different problem types: integrals, derivatives, equation solving, simplification, limits, series expansion (all implemented for both plain text and LaTeX)
 - Supports both plain text and LaTeX expressions via the `is_latex` flag
 - New parameters: `point` for limit operations, `order` for series expansion
 - Uses Pydantic models for request/response validation
+- Comprehensive validation and error handling for all operation types
 
 ### LaTeX Parsing Capabilities
 - Advanced LaTeX parsing using `sympy.parsing.latex.parse_latex()`
 - Support for mathematical expressions in LaTeX format
 - New `advanced_latex` module handles LaTeX-specific operations
 - Available operations with LaTeX: integration, differentiation, equation solving, limits, series expansion
+
+### Plain-Text Operations
+- All mathematical operations now fully implemented for plain-text expressions
+- Integration, differentiation, equation solving, simplification, limits, and series expansion
+- Safe expression parsing with whitelisted functions and constants
+- Optional SymEngine acceleration for faster computations
 
 ## Building and Running
 
@@ -171,15 +180,38 @@ ruff check . --fix
 }
 ```
 
+### Example Request (Limit - Plain Text)
+
+```json
+{
+  "type": "limit",
+  "expression": "sin(x)/x",
+  "variable": "x",
+  "point": "0",
+  "steps": true
+}
+```
+
+### Example Request (Series - Plain Text)
+
+```json
+{
+  "type": "series",
+  "expression": "exp(x)",
+  "variable": "x",
+  "point": "0",
+  "order": 5,
+  "steps": true
+}
+```
+
 ### Example Response
 
 ```json
 {
   "result": "x**3/3",
   "steps": [
-    "Parsing LaTeX expression: x^2",
-    "Identifying variable of integration: x",
-    "Simplifying expression: x**2",
+    "Parsing expression and simplifying",
     "Performing integration with respect to x",
     "Applying integration rules...",
     "Final result: x**3/3"
@@ -215,9 +247,15 @@ According to the implementation plan in `Steps.md`, future enhancements may incl
 
 ## Current Status
 
-The project has a basic working implementation with:
+The project has a comprehensive working implementation with:
 - Integration with step-by-step explanations
-- FastAPI web interface
-- Basic test coverage
+- Differentiation, equation solving, and expression simplification
+- Limits and series expansion (both plain text and LaTeX)
+- FastAPI web interface with comprehensive validation
+- Complete test coverage for all operations (API, LaTeX, and smoke tests)
 - Proper project structure with modular components
 - Code quality tools (black, ruff) configured
+- Safe expression parsing with whitelisted functions and constants
+- Optional SymEngine acceleration for faster computations
+- Support for both plain text and LaTeX mathematical expressions
+- Detailed step-by-step explanations for all supported operations

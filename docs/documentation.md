@@ -111,8 +111,8 @@ The main endpoint for mathematical computations. Accepts a JSON payload with the
 | `derivative` | Calculate derivative | `expression`, `variable` |
 | `solve` | Solve equation | `expression`, `variable` |
 | `simplify` | Simplify expression | `expression` |
-| `limit` | Calculate limit | `expression`, `variable`, `point` |
-| `series` | Series expansion | `expression`, `variable`, `point`, `order` |
+| `limit` | Calculate limit (implemented) | `expression`, `variable`, `point` |
+| `series` | Series expansion (implemented) | `expression`, `variable`, `point`, `order` |
 | `integral_latex` | LaTeX integral | `expression`, `variable`, `is_latex: true` |
 | `derivative_latex` | LaTeX derivative | `expression`, `variable`, `is_latex: true` |
 | `solve_latex` | LaTeX equation solving | `expression`, `variable`, `is_latex: true` |

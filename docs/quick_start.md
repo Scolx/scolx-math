@@ -112,8 +112,8 @@ Request body:
 - `derivative`: Calculate derivative
 - `solve`: Solve equation
 - `simplify`: Simplify expression
-- `limit`: Calculate limit
-- `series`: Series expansion
+- `limit`: Calculate limit (fully implemented)
+- `series`: Series expansion (fully implemented)
 - `integral_latex`: LaTeX integral
 - `derivative_latex`: LaTeX derivative
 - `solve_latex`: LaTeX equation solving

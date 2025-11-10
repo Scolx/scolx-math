@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi.concurrency import run_in_threadpool
-
 from scolx_math.advanced_latex import (
     differentiate_latex_with_steps,
     integrate_latex_with_steps,
@@ -21,6 +19,7 @@ from scolx_math.core.operations import (
     simplify_expr,
     solve_equation,
 )
+from scolx_math.core.utils import run_cpu_bound_async
 from scolx_math.explain.explainers import (
     integrate_with_steps,
     limit_with_steps,
@@ -52,7 +51,7 @@ class MathOperationService:
             Dictionary containing result string and steps list
         """
         try:
-            result, all_steps = await run_in_threadpool(
+            result, all_steps = await run_cpu_bound_async(
                 integrate_latex_with_steps, expression, variable
             )
             return {
@@ -77,7 +76,7 @@ class MathOperationService:
             Dictionary containing result string and steps list
         """
         try:
-            result, all_steps = await run_in_threadpool(
+            result, all_steps = await run_cpu_bound_async(
                 differentiate_latex_with_steps, expression, variable
             )
             return {
@@ -102,7 +101,7 @@ class MathOperationService:
             Dictionary containing result list and steps list
         """
         try:
-            result, all_steps = await run_in_threadpool(
+            result, all_steps = await run_cpu_bound_async(
                 solve_equation_latex_with_steps, expression, variable
             )
             return {
@@ -128,7 +127,7 @@ class MathOperationService:
             Dictionary containing result string and steps list
         """
         try:
-            result, all_steps = await run_in_threadpool(
+            result, all_steps = await run_cpu_bound_async(
                 limit_latex_with_steps, expression, variable, point
             )
             return {
@@ -155,7 +154,7 @@ class MathOperationService:
             Dictionary containing result string and steps list
         """
         try:
-            result, all_steps = await run_in_threadpool(
+            result, all_steps = await run_cpu_bound_async(
                 series_latex_with_steps, expression, variable, point, order
             )
             return {
@@ -181,12 +180,12 @@ class MathOperationService:
         """
         try:
             if steps:
-                result, all_steps = await run_in_threadpool(
+                result, all_steps = await run_cpu_bound_async(
                     integrate_with_steps, expression, variable
                 )
                 return {"result": str(result), "steps": all_steps if steps else []}
             else:
-                result = await run_in_threadpool(integrate_expr, expression, variable)
+                result = await run_cpu_bound_async(integrate_expr, expression, variable)
                 return {"result": str(result), "steps": []}
         except Exception as e:
             raise ValueError(f"Error in integral calculation: {str(e)}") from e
@@ -206,7 +205,7 @@ class MathOperationService:
             Dictionary containing result string and steps list
         """
         try:
-            result = await run_in_threadpool(differentiate_expr, expression, variable)
+            result = await run_cpu_bound_async(differentiate_expr, expression, variable)
             all_steps = (
                 ["Differentiating expression", f"Result: {result}"] if steps else []
             )
@@ -229,7 +228,7 @@ class MathOperationService:
             Dictionary containing result list and steps list
         """
         try:
-            result = await run_in_threadpool(solve_equation, expression, variable)
+            result = await run_cpu_bound_async(solve_equation, expression, variable)
             all_steps = ["Solving equation", f"Solutions: {result}"] if steps else []
             return {
                 "result": [str(sol) for sol in result],
@@ -250,7 +249,7 @@ class MathOperationService:
             Dictionary containing result string and steps list
         """
         try:
-            result = await run_in_threadpool(simplify_expr, expression)
+            result = await run_cpu_bound_async(simplify_expr, expression)
             all_steps = ["Simplifying expression", f"Result: {result}"] if steps else []
             return {"result": str(result), "steps": all_steps}
         except Exception as e:
@@ -273,12 +272,12 @@ class MathOperationService:
         """
         try:
             if steps:
-                result, all_steps = await run_in_threadpool(
+                result, all_steps = await run_cpu_bound_async(
                     limit_with_steps, expression, variable, point
                 )
                 return {"result": str(result), "steps": all_steps if steps else []}
             else:
-                result = await run_in_threadpool(
+                result = await run_cpu_bound_async(
                     limit_expr, expression, variable, point
                 )
                 return {"result": str(result), "steps": []}
@@ -303,12 +302,12 @@ class MathOperationService:
         """
         try:
             if steps:
-                result, all_steps = await run_in_threadpool(
+                result, all_steps = await run_cpu_bound_async(
                     series_with_steps, expression, variable, point, order
                 )
                 return {"result": str(result), "steps": all_steps if steps else []}
             else:
-                result = await run_in_threadpool(
+                result = await run_cpu_bound_async(
                     series_expr, expression, variable, point, order
                 )
                 return {"result": str(result), "steps": []}

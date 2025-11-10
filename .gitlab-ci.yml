@@ -1,0 +1,66 @@
+stages:
+  - lint
+  - test
+  - build
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+.python_job_template:
+  image: python:3.14
+  before_script:
+    - python --version
+    - python -m pip install --upgrade pip
+    - mkdir -p "$PIP_CACHE_DIR"
+    - pip install ".[dev]"
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - .cache/pip
+    policy: pull-push
+
+lint:
+  stage: lint
+  extends: .python_job_template
+  script:
+    - ruff check .
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+test:
+  stage: test
+  extends: .python_job_template
+  script:
+    - pytest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# -------------------------
+# Build and push images
+# -------------------------
+.build_docker_common:
+  image: docker:28.0.4
+  services:
+    - name: docker:28.0.4-dind
+      alias: docker
+      command: ["dockerd", "--host=tcp://0.0.0.0:2375", "--host=unix:///var/run/docker.sock", "--tls=false"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - docker info
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+
+build:image:
+  stage: build
+  needs: ["test"]
+  extends: .build_docker_common
+  script:
+    - docker build -f Dockerfile -t "$CI_REGISTRY_IMAGE/scolx-math:latest" .
+    - docker push "$CI_REGISTRY_IMAGE/scolx-math:latest"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - scolx_math/**

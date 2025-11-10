@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from scolx_math.api.service import MathOperationService
+from scolx_math.core.utils import cleanup_threadpool
 
 LATEX_TYPES = {
     "integral_latex",
@@ -209,3 +210,9 @@ async def solve_math(req: MathRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error.",
         ) from exc
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up resources on application shutdown."""
+    cleanup_threadpool()

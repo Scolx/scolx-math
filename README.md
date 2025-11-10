@@ -4,7 +4,7 @@ Scolx Math API is a Python-based mathematical computation service that provides 
 
 ## Features
 
-- **Plain-Text Operations**: Integration, differentiation, equation solving, and simplification using a hardened SymPy parser with optional SymEngine acceleration
+- **Plain-Text Operations**: Integration, differentiation, gradient and Hessian computation, equation solving, and simplification using a hardened SymPy parser with optional SymEngine acceleration
 - **LaTeX Operations**: Integration, differentiation, solving, limits, and series expansion with detailed steps
 - **Step-by-Step Explanations**: Optional breakdown for supported operations
 - **RESTful API**: FastAPI-based web service with structured validation and error handling
@@ -49,6 +49,17 @@ uvicorn scolx_math.api.main:app --reload
 
 The API will be available at `http://127.0.0.1:8000` with automatic reloading in development mode.
 
+### Running with Docker
+
+Build and run the container locally:
+
+```bash
+docker build -t scolx-math:latest .
+docker run --rm -p 8000:8000 scolx-math:latest
+```
+
+The application will listen on port `8000`. Override the port by adjusting the `docker run` command if needed.
+
 ### API Documentation
 
 Once running, you can access:
@@ -75,6 +86,16 @@ Once running, you can access:
   "variable": "x",
   "steps": true,
   "is_latex": true
+}
+```
+
+#### Gradient (Plain Text)
+```json
+{
+  "type": "gradient",
+  "expression": "x**2 + y**2",
+  "variables": ["x", "y"],
+  "steps": true
 }
 ```
 

@@ -44,6 +44,8 @@ class OperationType(str, Enum):
     SIMPLIFY = "simplify"
     LIMIT = "limit"
     SERIES = "series"
+    GRADIENT = "gradient"
+    HESSIAN = "hessian"
     INTEGRAL_LATEX = "integral_latex"
     DERIVATIVE_LATEX = "derivative_latex"
     SOLVE_LATEX = "solve_latex"
@@ -91,6 +93,9 @@ class MathRequest(BaseModel):
     )
     expression: str = Field(..., min_length=1)
     variable: str | None = Field(None, description="Variable name when required")
+    variables: list[str] | None = Field(
+        None, description="Variables for multivariate operations (e.g. gradient)"
+    )
     point: str | None = Field(None, description="Point for limit/series operations")
     order: int = Field(6, description="Series expansion order")
     steps: bool = Field(True, description="Include step-by-step explanations")
@@ -115,6 +120,31 @@ class MathRequest(BaseModel):
             value = value.strip()
         return value or None
 
+    @field_validator("variables", mode="before")
+    @classmethod
+    def _normalize_variables(cls, value: Any) -> list[str] | None:
+        """Normalize variables list for multivariate operations."""
+
+        if value is None:
+            return None
+
+        if isinstance(value, str):
+            value = [value]
+
+        if isinstance(value, (list, tuple)):
+            cleaned: list[str] = []
+            for item in value:
+                if item is None:
+                    continue
+                if not isinstance(item, str):
+                    raise TypeError("Variable names must be strings.")
+                trimmed = item.strip()
+                if trimmed and trimmed not in cleaned:
+                    cleaned.append(trimmed)
+            return cleaned or None
+
+        raise TypeError("Variables must be provided as a list of strings.")
+
     @field_validator("order")
     @classmethod
     def _validate_order(cls, value: int) -> int:
@@ -138,7 +168,19 @@ class MathRequest(BaseModel):
         if op_value in POINT_REQUIRED and not self.point:
             raise ValueError("Point is required for limit or series operations.")
 
+        if (
+            op_value in {OperationType.GRADIENT.value, OperationType.HESSIAN.value}
+            and not self.variables
+        ):
+            raise ValueError("Variables list is required for multivariate operations.")
+
         return self
+
+    @property
+    def ordered_variables(self) -> list[str] | None:
+        """Return variables preserving original order."""
+
+        return self.variables
 
 
 @app.post("/solve")
@@ -201,6 +243,14 @@ async def solve_math(req: MathRequest):
         elif req.type is OperationType.SERIES:
             return await MathOperationService.handle_series(
                 req.expression, req.variable, req.point, req.order, req.steps
+            )
+        elif req.type is OperationType.GRADIENT:
+            return await MathOperationService.handle_gradient(
+                req.expression, req.ordered_variables or [], req.steps
+            )
+        elif req.type is OperationType.HESSIAN:
+            return await MathOperationService.handle_hessian(
+                req.expression, req.ordered_variables or [], req.steps
             )
 
         raise HTTPException(

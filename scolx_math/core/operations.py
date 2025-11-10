@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sympy import Eq, diff, integrate, limit, series, simplify, solve
+from sympy import Eq, diff, hessian, integrate, limit, series, simplify, solve, symbols
 from sympy import sympify as sp_sympify
 
 try:  # pragma: no cover - optional acceleration layer
@@ -197,3 +197,30 @@ def simplify_expr(expr_str: str):
     if se_result is not None:
         return se_result
     return simplify(expr)
+
+
+def gradient_expr(expr_str: str, variables: list[str]):
+    """Compute the gradient (vector of partial derivatives) of an expression."""
+
+    if not variables:
+        raise ValueError("At least one variable is required for gradient calculation.")
+
+    var_names = [validate_variable_name(var) for var in variables]
+    expr = parse_plain_expression(expr_str, variables=var_names)
+    sym_vars = symbols(var_names)
+
+    gradient = [diff(expr, sym_var) for sym_var in sym_vars]
+    return gradient
+
+
+def hessian_expr(expr_str: str, variables: list[str]):
+    """Compute the Hessian matrix of second-order partial derivatives."""
+
+    if not variables:
+        raise ValueError("At least one variable is required for Hessian calculation.")
+
+    var_names = [validate_variable_name(var) for var in variables]
+    expr = parse_plain_expression(expr_str, variables=var_names)
+    sym_vars = symbols(var_names)
+
+    return hessian(expr, sym_vars)

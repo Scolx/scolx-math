@@ -80,6 +80,38 @@ def test_solve_endpoint_simplify():
     assert data["result"] == "0"
 
 
+def test_solve_endpoint_gradient():
+    """Test gradient calculation for multivariate expressions."""
+    response = _post(
+        {
+            "type": "gradient",
+            "expression": "x**2 + y**2",
+            "variables": ["x", "y"],
+            "steps": True,
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == ["2*x", "2*y"]
+    assert data["steps"]
+
+
+def test_solve_endpoint_hessian():
+    """Test Hessian matrix calculation for multivariate expressions."""
+    response = _post(
+        {
+            "type": "hessian",
+            "expression": "x**2 + y**2",
+            "variables": ["x", "y"],
+            "steps": False,
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == [["2", "0"], ["0", "2"]]
+    assert data["steps"] == []
+
+
 def test_solve_endpoint_invalid_type():
     """Unsupported operation should return 400."""
     response = _post(
@@ -179,3 +211,31 @@ def test_limit_latex_requires_point():
         msg.endswith("Point is required for limit or series operations.")
         for msg in detail_messages
     )
+
+
+def test_gradient_requires_variables():
+    response = _post(
+        {
+            "type": "gradient",
+            "expression": "x**2 + y**2",
+        }
+    )
+    assert response.status_code == 422
+    detail_messages = [entry["msg"] for entry in response.json()["detail"]]
+    assert any(
+        msg.endswith("Variables list is required for multivariate operations.")
+        for msg in detail_messages
+    )
+
+
+def test_gradient_normalizes_single_variable_string():
+    response = _post(
+        {
+            "type": "gradient",
+            "expression": "x**2",
+            "variables": "x",
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == ["2*x"]

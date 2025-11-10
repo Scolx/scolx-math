@@ -11,6 +11,7 @@
 8. [Running the Project](#running-the-project)
 9. [Testing](#testing)
 10. [Contributing](#contributing)
+11. [Deployment](#deployment)
 
 ## Overview
 
@@ -346,6 +347,12 @@ pytest --cov=scolx_math
 - `tests/test_api.py`: Tests for basic API endpoints and operations
 - `tests/test_latex.py`: Tests for LaTeX parsing functionality
 - `tests/test_smoke.py`: Basic smoke tests
+
+## Deployment
+
+For production deployment instructions, see the dedicated guide at
+[`docs/deployment.md`](deployment.md). It covers image builds, runtime
+configuration, Docker Compose examples, and GitLab CI/CD integration.
 
 ## Dependencies
 

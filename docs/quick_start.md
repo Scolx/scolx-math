@@ -26,6 +26,15 @@ uvicorn scolx_math.api.main:app --reload
 
 The API will be available at `http://127.0.0.1:8000`
 
+### Running with Docker
+
+```bash
+docker build -t scolx-math:latest .
+docker run --rm -p 8000:8000 scolx-math:latest
+```
+
+See [docs/deployment.md](deployment.md) for production deployment guidance.
+
 ## 3. API Documentation
 
 - Interactive API docs: `http://127.0.0.1:8000/docs`

@@ -13,6 +13,8 @@ from scolx_math.advanced_latex import (
 )
 from scolx_math.core.operations import (
     differentiate_expr,
+    gradient_expr,
+    hessian_expr,
     integrate_expr,
     limit_expr,
     series_expr,
@@ -110,6 +112,54 @@ class MathOperationService:
             }
         except Exception as e:
             raise ValueError(f"Error in equation solving: {str(e)}") from e
+
+    @staticmethod
+    async def handle_gradient(
+        expression: str, variables: list[str], steps: bool
+    ) -> dict[str, Any]:
+        """Handle gradient calculations for multivariate expressions."""
+
+        try:
+            gradient = await run_cpu_bound_async(gradient_expr, expression, variables)
+        except Exception as e:  # pragma: no cover - defensive
+            raise ValueError(f"Error in gradient calculation: {str(e)}") from e
+
+        result = [str(component) for component in gradient]
+        all_steps = (
+            [
+                f"Computing gradient for expression: {expression}",
+                f"Variables: {', '.join(variables)}",
+                f"Result: {result}",
+            ]
+            if steps
+            else []
+        )
+        return {"result": result, "steps": all_steps}
+
+    @staticmethod
+    async def handle_hessian(
+        expression: str, variables: list[str], steps: bool
+    ) -> dict[str, Any]:
+        """Handle Hessian matrix calculations for multivariate expressions."""
+
+        try:
+            hessian_matrix = await run_cpu_bound_async(
+                hessian_expr, expression, variables
+            )
+        except Exception as e:  # pragma: no cover - defensive
+            raise ValueError(f"Error in Hessian calculation: {str(e)}") from e
+
+        result = [[str(entry) for entry in row] for row in hessian_matrix.tolist()]
+        all_steps = (
+            [
+                f"Computing Hessian for expression: {expression}",
+                f"Variables: {', '.join(variables)}",
+                f"Result: {result}",
+            ]
+            if steps
+            else []
+        )
+        return {"result": result, "steps": all_steps}
 
     @staticmethod
     async def handle_limit_latex(

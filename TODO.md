@@ -17,7 +17,7 @@
 
 ## Planned Features
 - ✅ Enhanced LaTeX parsing with more comprehensive support
-- 🔲 Support for multivariate calculus
+- ✅ Support for multivariate calculus
 - 🔲 Matrix and linear algebra operations
 - 🔲 Plotting and visualization capabilities
 - 🔲 Support for differential equations
@@ -29,11 +29,9 @@
 - ✅ Better error handling and validation
 - 🔲 Performance optimization for complex expressions
 - 🔲 More detailed step-by-step explanations
-- 🔲 Internationalization support
-- 🔲 API rate limiting
-- 🔲 Authentication for production deployments
-- ✅ Docker containerization (Note: Implementation may vary)
-- 🔲 CI/CD pipeline setup
+- ✅ Docker containerization
+- ✅ CI/CD pipeline setup
+- 🔲 Health check endpoints (e.g. /livez, /readyz, /startupz)
 
 ## Bug Fixes
 - 🔲 Verify LaTeX parsing edge cases
@@ -45,4 +43,4 @@
 - ✅ User guide with common use cases
 - ✅ Advanced usage examples
 - ✅ Contributing guidelines
-- 🔲 Deployment guide for production environments
+- ✅ Deployment guide for production environments

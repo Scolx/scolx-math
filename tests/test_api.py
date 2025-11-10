@@ -2,6 +2,7 @@
 
 from typing import Any
 
+import pytest
 from fastapi.testclient import TestClient
 
 from scolx_math.api.main import app
@@ -9,11 +10,11 @@ from scolx_math.api.main import app
 client = TestClient(app)
 
 
-def _post(payload: dict[str, Any]):
+def _post(payload: dict[str, Any]) -> Any:
     return client.post("/solve", json=payload)
 
 
-def test_solve_endpoint_integral():
+def test_solve_endpoint_integral() -> None:
     """Test integral calculation."""
     response = _post(
         {
@@ -21,7 +22,7 @@ def test_solve_endpoint_integral():
             "expression": "x**2",
             "variable": "x",
             "steps": True,
-        }
+        },
     )
     assert response.status_code == 200
     data = response.json()
@@ -29,7 +30,7 @@ def test_solve_endpoint_integral():
     assert data["steps"][0] == "Parsing expression and simplifying"
 
 
-def test_solve_endpoint_derivative():
+def test_solve_endpoint_derivative() -> None:
     """Test derivative calculation."""
     response = _post(
         {
@@ -37,7 +38,7 @@ def test_solve_endpoint_derivative():
             "expression": "x**3",
             "variable": "x",
             "steps": True,
-        }
+        },
     )
     assert response.status_code == 200
     data = response.json()
@@ -46,7 +47,7 @@ def test_solve_endpoint_derivative():
     assert data["result"] == "3*x**2"
 
 
-def test_solve_endpoint_solve():
+def test_solve_endpoint_solve() -> None:
     """Test equation solving."""
     response = _post(
         {
@@ -54,7 +55,7 @@ def test_solve_endpoint_solve():
             "expression": "x**2 - 4",
             "variable": "x",
             "steps": True,
-        }
+        },
     )
     assert response.status_code == 200
     data = response.json()
@@ -64,14 +65,14 @@ def test_solve_endpoint_solve():
     assert "2" in data["result"]
 
 
-def test_solve_endpoint_simplify():
+def test_solve_endpoint_simplify() -> None:
     """Test expression simplification."""
     response = _post(
         {
             "type": "simplify",
             "expression": "(x+1)**2 - x**2 - 2*x - 1",
             "steps": True,
-        }
+        },
     )
     assert response.status_code == 200
     data = response.json()
@@ -80,7 +81,7 @@ def test_solve_endpoint_simplify():
     assert data["result"] == "0"
 
 
-def test_solve_endpoint_gradient():
+def test_solve_endpoint_gradient() -> None:
     """Test gradient calculation for multivariate expressions."""
     response = _post(
         {
@@ -88,7 +89,7 @@ def test_solve_endpoint_gradient():
             "expression": "x**2 + y**2",
             "variables": ["x", "y"],
             "steps": True,
-        }
+        },
     )
     assert response.status_code == 200
     data = response.json()
@@ -96,7 +97,7 @@ def test_solve_endpoint_gradient():
     assert data["steps"]
 
 
-def test_solve_endpoint_hessian():
+def test_solve_endpoint_hessian() -> None:
     """Test Hessian matrix calculation for multivariate expressions."""
     response = _post(
         {
@@ -104,7 +105,7 @@ def test_solve_endpoint_hessian():
             "expression": "x**2 + y**2",
             "variables": ["x", "y"],
             "steps": False,
-        }
+        },
     )
     assert response.status_code == 200
     data = response.json()
@@ -112,12 +113,12 @@ def test_solve_endpoint_hessian():
     assert data["steps"] == []
 
 
-def test_matrix_determinant_endpoint():
+def test_matrix_determinant_endpoint() -> None:
     response = _post(
         {
             "type": "matrix_determinant",
             "matrix": [[1, 2], [3, 4]],
-        }
+        },
     )
     assert response.status_code == 200
     data = response.json()
@@ -125,32 +126,32 @@ def test_matrix_determinant_endpoint():
     assert data["steps"] == []
 
 
-def test_matrix_inverse_endpoint():
+def test_matrix_inverse_endpoint() -> None:
     response = _post(
         {
             "type": "matrix_inverse",
             "matrix": [[1, 2], [3, 4]],
-        }
+        },
     )
     assert response.status_code == 200
     data = response.json()
     assert data["result"] == [["-2", "1"], ["3/2", "-1/2"]]
 
 
-def test_matrix_multiply_endpoint():
+def test_matrix_multiply_endpoint() -> None:
     response = _post(
         {
             "type": "matrix_multiply",
             "left_matrix": [[1, 2], [3, 4]],
             "right_matrix": [[5, 6], [7, 8]],
-        }
+        },
     )
     assert response.status_code == 200
     data = response.json()
     assert data["result"] == [["19", "22"], ["43", "50"]]
 
 
-def test_plot_endpoint():
+def test_plot_endpoint() -> None:
     response = _post(
         {
             "type": "plot",
@@ -158,7 +159,7 @@ def test_plot_endpoint():
             "variable": "x",
             "plot_range": ["0", "2"],
             "samples": 5,
-        }
+        },
     )
     assert response.status_code == 200
     data = response.json()
@@ -168,7 +169,7 @@ def test_plot_endpoint():
     assert data["points"][0]["y"] == 0.0
 
 
-def test_ode_endpoint_with_initial_condition():
+def test_ode_endpoint_with_initial_condition() -> None:
     response = _post(
         {
             "type": "ode",
@@ -176,26 +177,26 @@ def test_ode_endpoint_with_initial_condition():
             "variable": "x",
             "function": "y",
             "initial_conditions": {"y(0)": "1"},
-        }
+        },
     )
     assert response.status_code == 200
     data = response.json()
     assert "exp(x)" in data["result"]
 
 
-def test_solve_endpoint_invalid_type():
+def test_solve_endpoint_invalid_type() -> None:
     """Unsupported operation should return 400."""
     response = _post(
-        {"type": "invalid", "expression": "x**2", "variable": "x", "steps": True}
+        {"type": "invalid", "expression": "x**2", "variable": "x", "steps": True},
     )
     assert response.status_code == 400
     assert response.json()["detail"].endswith("Unsupported operation type.")
 
 
-def test_solve_endpoint_no_steps():
+def test_solve_endpoint_no_steps() -> None:
     """Test request without step-by-step explanation."""
     response = _post(
-        {"type": "integral", "expression": "x", "variable": "x", "steps": False}
+        {"type": "integral", "expression": "x", "variable": "x", "steps": False},
     )
     assert response.status_code == 200
     data = response.json()
@@ -205,7 +206,7 @@ def test_solve_endpoint_no_steps():
     assert data["steps"] == []
 
 
-def test_plain_limit_not_implemented():
+def test_plain_limit_not_implemented() -> None:
     # Now that limit is implemented, test that it works
     response = _post(
         {
@@ -213,7 +214,7 @@ def test_plain_limit_not_implemented():
             "expression": "sin(x)/x",
             "variable": "x",
             "point": "0",
-        }
+        },
     )
     assert response.status_code == 200
     data = response.json()
@@ -223,7 +224,7 @@ def test_plain_limit_not_implemented():
     assert data["result"] == "1"
 
 
-def test_missing_variable_validation_error():
+def test_missing_variable_validation_error() -> None:
     response = _post({"type": "integral", "expression": "x**2"})
     assert response.status_code == 422
     detail_messages = [entry["msg"] for entry in response.json()["detail"]]
@@ -233,14 +234,14 @@ def test_missing_variable_validation_error():
     )
 
 
-def test_latex_requires_flag():
+def test_latex_requires_flag() -> None:
     response = _post(
         {
             "type": "integral_latex",
             "expression": "x^2",
             "variable": "x",
             "is_latex": False,
-        }
+        },
     )
     assert response.status_code == 422
     detail_messages = [entry["msg"] for entry in response.json()["detail"]]
@@ -250,14 +251,14 @@ def test_latex_requires_flag():
     )
 
 
-def test_plain_operation_rejects_latex_flag():
+def test_plain_operation_rejects_latex_flag() -> None:
     response = _post(
         {
             "type": "integral",
             "expression": "x**2",
             "variable": "x",
             "is_latex": True,
-        }
+        },
     )
     assert response.status_code == 422
     detail_messages = [entry["msg"] for entry in response.json()["detail"]]
@@ -267,14 +268,14 @@ def test_plain_operation_rejects_latex_flag():
     )
 
 
-def test_limit_latex_requires_point():
+def test_limit_latex_requires_point() -> None:
     response = _post(
         {
             "type": "limit_latex",
             "expression": "\\frac{\\sin(x)}{x}",
             "variable": "x",
             "is_latex": True,
-        }
+        },
     )
     assert response.status_code == 422
     detail_messages = [entry["msg"] for entry in response.json()["detail"]]
@@ -284,12 +285,12 @@ def test_limit_latex_requires_point():
     )
 
 
-def test_gradient_requires_variables():
+def test_gradient_requires_variables() -> None:
     response = _post(
         {
             "type": "gradient",
             "expression": "x**2 + y**2",
-        }
+        },
     )
     assert response.status_code == 422
     detail_messages = [entry["msg"] for entry in response.json()["detail"]]
@@ -299,24 +300,24 @@ def test_gradient_requires_variables():
     )
 
 
-def test_gradient_normalizes_single_variable_string():
+def test_gradient_normalizes_single_variable_string() -> None:
     response = _post(
         {
             "type": "gradient",
             "expression": "x**2",
             "variables": "x",
-        }
+        },
     )
     assert response.status_code == 200
     data = response.json()
     assert data["result"] == ["2*x"]
 
 
-def test_matrix_determinant_requires_matrix():
+def test_matrix_determinant_requires_matrix() -> None:
     response = _post(
         {
             "type": "matrix_determinant",
-        }
+        },
     )
     assert response.status_code == 422
     detail_messages = [entry["msg"] for entry in response.json()["detail"]]
@@ -326,42 +327,42 @@ def test_matrix_determinant_requires_matrix():
     )
 
 
-def test_matrix_multiply_requires_both_matrices():
+def test_matrix_multiply_requires_both_matrices() -> None:
     response = _post(
         {
             "type": "matrix_multiply",
             "left_matrix": [[1]],
-        }
+        },
     )
     assert response.status_code == 422
     detail_messages = [entry["msg"] for entry in response.json()["detail"]]
     assert any(
         msg.endswith(
-            "Both left_matrix and right_matrix are required for matrix multiplication."
+            "Both left_matrix and right_matrix are required for matrix multiplication.",
         )
         for msg in detail_messages
     )
 
 
-def test_matrix_multiply_dimension_mismatch():
+def test_matrix_multiply_dimension_mismatch() -> None:
     response = _post(
         {
             "type": "matrix_multiply",
             "left_matrix": [[1, 2]],
             "right_matrix": [[3, 4]],
-        }
+        },
     )
     assert response.status_code == 400
     assert "incompatible" in response.json()["detail"]
 
 
-def test_plot_requires_range():
+def test_plot_requires_range() -> None:
     response = _post(
         {
             "type": "plot",
             "expression": "x",
             "variable": "x",
-        }
+        },
     )
     assert response.status_code == 422
     detail_messages = [entry["msg"] for entry in response.json()["detail"]]
@@ -371,13 +372,13 @@ def test_plot_requires_range():
     )
 
 
-def test_plot_requires_expression():
+def test_plot_requires_expression() -> None:
     response = _post(
         {
             "type": "plot",
             "variable": "x",
             "plot_range": ["0", "1"],
-        }
+        },
     )
     assert response.status_code == 422
     detail_messages = [entry["msg"] for entry in response.json()["detail"]]
@@ -387,19 +388,19 @@ def test_plot_requires_expression():
     )
 
 
-def test_ode_requires_function_variable_expression():
+def test_ode_requires_function_variable_expression() -> None:
     response = _post(
         {
             "type": "ode",
             "expression": "Eq(diff(y(x), x), y(x))",
-        }
+        },
     )
     assert response.status_code == 422
     detail_messages = [entry["msg"] for entry in response.json()["detail"]]
     assert any(msg.endswith("ODE variable is required.") for msg in detail_messages)
 
 
-def test_ode_numeric_requires_range():
+def test_ode_numeric_requires_range() -> None:
     response = _post(
         {
             "type": "ode",
@@ -407,7 +408,7 @@ def test_ode_numeric_requires_range():
             "variable": "x",
             "function": "y",
             "numeric": True,
-        }
+        },
     )
     assert response.status_code == 422
     detail_messages = [entry["msg"] for entry in response.json()["detail"]]
@@ -415,3 +416,173 @@ def test_ode_numeric_requires_range():
         msg.endswith("Numeric ODE solving requires numeric_range to be provided.")
         for msg in detail_messages
     )
+
+
+def test_complex_conjugate_endpoint() -> None:
+    response = _post(
+        {
+            "type": "complex_conjugate",
+            "expression": "1 + 2*I",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == "1 - 2*I"
+
+
+def test_complex_modulus_endpoint() -> None:
+    response = _post(
+        {
+            "type": "complex_modulus",
+            "expression": "3 + 4*I",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == "5"
+
+
+def test_complex_argument_endpoint() -> None:
+    response = _post(
+        {
+            "type": "complex_argument",
+            "expression": "I",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == "pi/2"
+
+
+def test_complex_to_polar_endpoint() -> None:
+    response = _post(
+        {
+            "type": "complex_to_polar",
+            "expression": "1 + I",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["magnitude"] == "sqrt(2)"
+    assert data["angle"] == "pi/4"
+
+
+def test_complex_from_polar_endpoint() -> None:
+    response = _post(
+        {
+            "type": "complex_from_polar",
+            "radius": "2",
+            "angle": "pi/2",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == "2*I"
+
+
+def test_stats_mean_endpoint() -> None:
+    response = _post(
+        {
+            "type": "stats_mean",
+            "values": [1, 2, 3, 4],
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == "5/2"
+
+
+def test_stats_variance_population_endpoint() -> None:
+    response = _post(
+        {
+            "type": "stats_variance",
+            "values": [1, 2, 3],
+            "sample": False,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == "2/3"
+
+
+def test_stats_stddev_sample_endpoint() -> None:
+    response = _post(
+        {
+            "type": "stats_stddev",
+            "values": [1, 3, 5],
+            "sample": True,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == "2"
+
+
+def test_normal_pdf_endpoint() -> None:
+    response = _post(
+        {
+            "type": "normal_pdf",
+            "distribution_value": "0",
+            "mean_value": "0",
+            "std_value": "1",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == "sqrt(2)/(2*sqrt(pi))"
+
+
+def test_normal_cdf_endpoint() -> None:
+    response = _post(
+        {
+            "type": "normal_cdf",
+            "distribution_value": "0",
+            "mean_value": "0",
+            "std_value": "1",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == "1/2"
+
+
+def test_normal_pdf_requires_parameters() -> None:
+    response = _post(
+        {
+            "type": "normal_pdf",
+            "distribution_value": "0",
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_stats_mean_requires_values() -> None:
+    response = _post({"type": "stats_mean"})
+    assert response.status_code == 422
+
+
+def test_numeric_solve_endpoint() -> None:
+    response = _post(
+        {
+            "type": "solve_numeric",
+            "equations": ["x + y - 3", "x - y - 1"],
+            "equation_variables": ["x", "y"],
+            "initial_guess": [1, 1],
+            "tolerance": 1e-9,
+            "max_iterations": 200,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["solution"]["x"] == pytest.approx(2.0, rel=1e-6)
+    assert data["solution"]["y"] == pytest.approx(1.0, rel=1e-6)
+
+
+def test_numeric_solve_requires_equations() -> None:
+    response = _post(
+        {
+            "type": "solve_numeric",
+            "equation_variables": ["x"],
+        },
+    )
+    assert response.status_code == 422

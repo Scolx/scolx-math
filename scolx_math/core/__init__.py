@@ -11,8 +11,8 @@ from scolx_math.core.parsing import parse_plain_expression, validate_variable_na
 __all__ = [
     "differentiate_expr",
     "integrate_expr",
+    "parse_plain_expression",
     "simplify_expr",
     "solve_equation",
-    "parse_plain_expression",
     "validate_variable_name",
 ]

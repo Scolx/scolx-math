@@ -10,9 +10,13 @@ except ImportError:  # pragma: no cover - optional dependency
     np = None
 
 try:  # pragma: no cover - optional dependency
+    from scipy import optimize
     from scipy.integrate import solve_ivp
 except ImportError:  # pragma: no cover - optional dependency
     solve_ivp = None
+    optimize = None
+
+from collections.abc import Sequence
 
 import sympy as sp
 from sympy import (
@@ -43,7 +47,7 @@ from scolx_math.core.parsing import (
 )
 
 
-def _symengine_symbol(name: str):
+def _symengine_symbol(name: str) -> object:
     """Create a SymEngine symbol if SymEngine is available."""
     if se is None:
         return None
@@ -53,7 +57,7 @@ def _symengine_symbol(name: str):
         return None
 
 
-def _symengine_expr(expr):
+def _symengine_expr(expr) -> object:
     """Convert expression to SymEngine if available."""
     if se is None:
         return None
@@ -63,7 +67,7 @@ def _symengine_expr(expr):
         return None
 
 
-def _symengine_to_sympy(result):
+def _symengine_to_sympy(result) -> object:
     """Convert SymEngine result back to SymPy."""
     if result is None:
         return None
@@ -75,7 +79,7 @@ def _symengine_to_sympy(result):
         return None
 
 
-def _symengine_simplify(expr):
+def _symengine_simplify(expr) -> object:
     """Simplify expression using SymEngine if available."""
     se_expr = _symengine_expr(expr)
     if se_expr is None:
@@ -87,7 +91,7 @@ def _symengine_simplify(expr):
     return _symengine_to_sympy(simplified)
 
 
-def _symengine_diff(expr, var_name: str):
+def _symengine_diff(expr, var_name: str) -> object:
     """Differentiate expression using SymEngine if available."""
     se_expr = _symengine_expr(expr)
     if se_expr is None:
@@ -102,7 +106,7 @@ def _symengine_diff(expr, var_name: str):
     return _symengine_to_sympy(result)
 
 
-def _symengine_integrate(expr, var_name: str):
+def _symengine_integrate(expr, var_name: str) -> object:
     """Integrate expression using SymEngine if available."""
     se_expr = _symengine_expr(expr)
     if se_expr is None:
@@ -117,7 +121,7 @@ def _symengine_integrate(expr, var_name: str):
     return _symengine_to_sympy(result)
 
 
-def _symengine_matrix_from_matrix(matrix: Matrix):
+def _symengine_matrix_from_matrix(matrix: Matrix) -> object:
     """Convert a SymPy matrix to a SymEngine DenseMatrix if possible."""
 
     if se is None:
@@ -135,27 +139,7 @@ def _symengine_matrix_from_matrix(matrix: Matrix):
         return None
 
 
-def _symengine_matrix_to_sympy(se_matrix) -> Matrix | None:
-    """Convert a SymEngine matrix back to SymPy."""
-
-    if se_matrix is None:
-        return None
-    try:
-        sympy_rows: list[list[Basic]] = []
-        for row in se_matrix.tolist():
-            converted_row: list[Basic] = []
-            for entry in row:
-                converted = _symengine_to_sympy(entry)
-                if converted is None:
-                    converted = sp_sympify(str(entry))
-                converted_row.append(converted)
-            sympy_rows.append(converted_row)
-        return Matrix(sympy_rows)
-    except Exception:  # pragma: no cover - optional path
-        return None
-
-
-def solve_equation(expr_str: str, var_str: str):
+def solve_equation(expr_str: str, var_str: str) -> list:
     """Solve an equation for a given variable.
 
     Args:
@@ -172,7 +156,7 @@ def solve_equation(expr_str: str, var_str: str):
     return solve(equation, x_expr)
 
 
-def integrate_expr(expr_str: str, var_str: str):
+def integrate_expr(expr_str: str, var_str: str) -> sp.Expr:
     """Integrate a mathematical expression with respect to a variable.
 
     Args:
@@ -191,7 +175,7 @@ def integrate_expr(expr_str: str, var_str: str):
     return integrate(expr, var_symbol)
 
 
-def differentiate_expr(expr_str: str, var_str: str):
+def differentiate_expr(expr_str: str, var_str: str) -> sp.Expr:
     """Differentiate a mathematical expression with respect to a variable.
 
     Args:
@@ -210,7 +194,7 @@ def differentiate_expr(expr_str: str, var_str: str):
     return diff(expr, var_symbol)
 
 
-def limit_expr(expr_str: str, var_str: str, point_str: str):
+def limit_expr(expr_str: str, var_str: str, point_str: str) -> sp.Expr:
     """Calculate the limit of an expression as a variable approaches a point.
 
     Args:
@@ -230,7 +214,12 @@ def limit_expr(expr_str: str, var_str: str, point_str: str):
     return limit(expr, var_symbol, point)
 
 
-def series_expr(expr_str: str, var_str: str, point_str: str = "0", order: int = 6):
+def series_expr(
+    expr_str: str,
+    var_str: str,
+    point_str: str = "0",
+    order: int = 6,
+) -> sp.Expr:
     """Calculate the series expansion of an expression around a point.
 
     Args:
@@ -251,7 +240,7 @@ def series_expr(expr_str: str, var_str: str, point_str: str = "0", order: int = 
     return series(expr, var_symbol, point, n=order)
 
 
-def simplify_expr(expr_str: str):
+def simplify_expr(expr_str: str) -> sp.Expr:
     """Simplify a mathematical expression.
 
     Args:
@@ -265,44 +254,6 @@ def simplify_expr(expr_str: str):
     if se_result is not None:
         return se_result
     return simplify(expr)
-
-
-def _parse_matrix(matrix_data: list[list[object]]) -> Matrix:
-    """Parse a nested list into a SymPy Matrix with safe element parsing."""
-
-    if not isinstance(matrix_data, (list, tuple)) or not matrix_data:
-        raise ValueError("Matrix must be provided as a non-empty 2D list.")
-
-    rows: list[list[Basic]] = []
-    expected_columns: int | None = None
-
-    for row in matrix_data:
-        if not isinstance(row, (list, tuple)) or not row:
-            raise ValueError("Matrix rows must be non-empty lists of expressions.")
-
-        parsed_row: list[Basic] = []
-        for value in row:
-            if isinstance(value, Basic):
-                parsed_row.append(value)
-            elif isinstance(value, str):
-                parsed_row.append(parse_plain_expression(value))
-            elif isinstance(value, (int, float)):
-                parsed_row.append(sp_sympify(value))
-            else:
-                raise TypeError(
-                    "Matrix entries must be numbers or strings representing expressions."
-                )
-
-        if expected_columns is None:
-            expected_columns = len(parsed_row)
-            if expected_columns == 0:
-                raise ValueError("Matrix rows must contain at least one element.")
-        elif len(parsed_row) != expected_columns:
-            raise ValueError("All matrix rows must have the same number of columns.")
-
-        rows.append(parsed_row)
-
-    return Matrix(rows)
 
 
 def matrix_determinant(matrix_data: list[list[object]]) -> Basic:
@@ -346,7 +297,8 @@ def matrix_inverse(matrix_data: list[list[object]]) -> Matrix:
 
 
 def matrix_multiply(
-    matrix_a: list[list[object]], matrix_b: list[list[object]]
+    matrix_a: list[list[object]],
+    matrix_b: list[list[object]],
 ) -> Matrix:
     """Compute the product of two matrices."""
 
@@ -354,7 +306,7 @@ def matrix_multiply(
     right = _parse_matrix(matrix_b)
     if left.cols != right.rows:
         raise ValueError(
-            "Matrix dimensions are incompatible for multiplication (columns of A must match rows of B)."
+            "Matrix dimensions are incompatible for multiplication (columns of A must match rows of B).",
         )
     se_left = _symengine_matrix_from_matrix(left)
     se_right = _symengine_matrix_from_matrix(right)
@@ -383,7 +335,7 @@ def solve_ode(
 
     if not func_name or not indep_var:
         raise ValueError(
-            "Both function name and independent variable are required for ODE solving."
+            "Both function name and independent variable are required for ODE solving.",
         )
 
     indep_symbol = sp.Symbol(validate_variable_name(indep_var))
@@ -420,21 +372,18 @@ def solve_ode(
         except Exception:
             if numeric_start is None or numeric_end is None:
                 raise ValueError(
-                    "Unable to solve the differential equation analytically. Provide numeric=True with numeric_range to use numerical methods."
+                    "Unable to solve the differential equation analytically. Provide numeric=True with numeric_range to use numerical methods.",
                 )
             numeric = True
 
-    if not numeric:
-        raise ValueError("Unable to solve the differential equation analytically.")
-
     if solve_ivp is None:
         raise ValueError(
-            "SciPy is required for numeric ODE solving but is not available. Install scipy to enable this feature."
+            "SciPy is required for numeric ODE solving but is not available. Install scipy to enable this feature.",
         )
 
     if numeric_start is None or numeric_end is None:
         raise ValueError(
-            "Numeric ODE solving requires numeric_start and numeric_end values."
+            "Numeric ODE solving requires numeric_start and numeric_end values.",
         )
 
     t0 = float(sp.sympify(numeric_start))
@@ -443,7 +392,7 @@ def solve_ode(
         raise ValueError("Numeric range must consist of finite numeric values.")
     if tf <= t0:
         raise ValueError(
-            "numeric_range end must be greater than start for numeric ODE solving."
+            "numeric_range end must be greater than start for numeric ODE solving.",
         )
 
     derivative_symbol = sp.diff(func_symbol, indep_symbol)
@@ -451,12 +400,12 @@ def solve_ode(
         rhs_candidates = sp.solve(ode_expr, derivative_symbol)
     except Exception as exc:  # pragma: no cover - defensive branch
         raise ValueError(
-            "Numeric ODE solving currently supports first-order explicit equations."
+            "Numeric ODE solving currently supports first-order explicit equations.",
         ) from exc
 
     if not rhs_candidates:
         raise ValueError(
-            "Numeric ODE solving currently supports first-order explicit equations."
+            "Numeric ODE solving currently supports first-order explicit equations.",
         )
 
     rhs_expr = rhs_candidates[0]
@@ -472,28 +421,34 @@ def solve_ode(
                 break
         if y0 is None:
             raise ValueError(
-                "Numeric ODE solving requires an initial condition defined at the numeric_range start."
+                "Numeric ODE solving requires an initial condition defined at the numeric_range start.",
             )
     else:
         raise ValueError("Numeric ODE solving requires initial conditions.")
 
     func_lambda = sp.lambdify(
-        (indep_symbol, func_symbol), rhs_expr, modules=["numpy", "math"]
+        (indep_symbol, func_symbol),
+        rhs_expr,
+        modules=["numpy", "math"],
     )
 
     num_samples = max(2, min(1000, samples))
     t_eval = np.linspace(t0, tf, num_samples) if np is not None else None
 
-    def ode_rhs(t, y):
+    def ode_rhs(t: float, y: list[float]) -> float:
         try:
             return float(func_lambda(t, y[0]))
         except Exception as exc:  # pragma: no cover - defensive branch
             raise ValueError(
-                "Failed to evaluate ODE right-hand side numerically."
+                "Failed to evaluate ODE right-hand side numerically.",
             ) from exc
 
     solution = solve_ivp(
-        ode_rhs, (t0, tf), [y0], t_eval=t_eval, dense_output=t_eval is None
+        ode_rhs,
+        (t0, tf),
+        [y0],
+        t_eval=t_eval,
+        dense_output=t_eval is None,
     )
     if not solution.success:
         raise ValueError(f"Numeric ODE solver failed: {solution.message}")
@@ -573,7 +528,181 @@ def generate_plot_points(
     return points
 
 
-def gradient_expr(expr_str: str, variables: list[str]):
+def stats_mean(values: Sequence[object]) -> sp.Expr:
+    """Compute the arithmetic mean of the supplied values."""
+
+    data = _parse_numeric_sequence(values)
+    total = sum(data)
+    mean_expr = total / len(data)
+    return sp.simplify(mean_expr)
+
+
+def stats_variance(values: Sequence[object], sample: bool) -> sp.Expr:
+    """Compute variance (population or sample) of the supplied values."""
+
+    data = _parse_numeric_sequence(values)
+    count = len(data)
+    if sample and count < 2:
+        raise ValueError("At least two values are required for sample variance.")
+
+    mean_expr = stats_mean(values)
+    denominator = count - 1 if sample else count
+    variance_expr = sum((value - mean_expr) ** 2 for value in data) / denominator
+    return sp.simplify(variance_expr)
+
+
+def stats_standard_deviation(values: Sequence[object], sample: bool) -> sp.Expr:
+    """Compute standard deviation for the supplied values."""
+
+    variance_expr = stats_variance(values, sample)
+    return sp.simplify(sp.sqrt(variance_expr))
+
+
+def normal_pdf(value_str: str, mean_str: str, std_str: str) -> sp.Expr:
+    """Return the normal distribution PDF evaluated at value."""
+
+    value = parse_plain_expression(value_str)
+    mean = parse_plain_expression(mean_str)
+    std = parse_plain_expression(std_str)
+
+    if std == 0:
+        raise ValueError("Standard deviation must be non-zero.")
+
+    pdf_expr = (1 / (std * sp.sqrt(2 * sp.pi))) * sp.exp(
+        -((value - mean) ** 2) / (2 * std**2),
+    )
+    return sp.simplify(pdf_expr)
+
+
+def normal_cdf(value_str: str, mean_str: str, std_str: str) -> sp.Expr:
+    """Return the normal distribution CDF evaluated at value."""
+
+    value = parse_plain_expression(value_str)
+    mean = parse_plain_expression(mean_str)
+    std = parse_plain_expression(std_str)
+
+    if std == 0:
+        raise ValueError("Standard deviation must be non-zero.")
+
+    z = (value - mean) / (sp.sqrt(2) * std)
+    cdf_expr = sp.Rational(1, 2) * (1 + sp.erf(z))
+    return sp.simplify(cdf_expr)
+
+
+def complex_conjugate_expr(expr_str: str) -> sp.Expr:
+    """Return the complex conjugate of the given expression."""
+
+    expr = parse_plain_expression(expr_str)
+    return sp.conjugate(expr)
+
+
+def complex_modulus_expr(expr_str: str) -> sp.Expr:
+    """Return the complex modulus of the given expression."""
+
+    expr = parse_plain_expression(expr_str)
+    return sp.Abs(expr)
+
+
+def complex_argument_expr(expr_str: str) -> sp.Expr:
+    """Return the complex argument of the given expression."""
+
+    expr = parse_plain_expression(expr_str)
+    return sp.arg(expr)
+
+
+def complex_to_polar_expr(expr_str: str) -> tuple[sp.Expr, sp.Expr]:
+    """Convert a complex expression to polar form (magnitude, angle)."""
+
+    expr = parse_plain_expression(expr_str)
+    magnitude = sp.Abs(expr)
+    angle = sp.arg(expr)
+    return magnitude, angle
+
+
+def complex_from_polar_expr(radius_str: str, angle_str: str) -> sp.Expr:
+    """Convert polar form inputs into a complex expression."""
+
+    radius = parse_plain_expression(radius_str)
+    angle = parse_plain_expression(angle_str)
+    complex_expr = radius * sp.exp(sp.I * angle)
+    return sp.simplify(complex_expr)
+
+
+def solve_system_numeric(
+    equations: Sequence[str],
+    variables: Sequence[str],
+    initial_guess: Sequence[str | float] | None = None,
+    max_iterations: int = 100,
+    tolerance: float = 1e-9,
+) -> dict[str, float]:
+    """Solve a system of nonlinear equations numerically using SciPy."""
+
+    if optimize is None:
+        raise ValueError(
+            "SciPy is required for numeric root solving but is not available. Install scipy to enable this feature.",
+        )
+
+    if not equations:
+        raise ValueError("At least one equation must be provided.")
+
+    if len(equations) != len(variables):
+        raise ValueError("Number of equations must match number of variables.")
+
+    var_symbols = [sp.Symbol(validate_variable_name(name)) for name in variables]
+    safe_locals = get_safe_locals()
+    for var_symbol in var_symbols:
+        safe_locals[var_symbol.name] = var_symbol
+
+    parsed_equations: list[sp.Expr] = []
+    for eq_str in equations:
+        try:
+            expr = sp.sympify(eq_str, locals=safe_locals)
+        except Exception as exc:  # pragma: no cover - defensive branch
+            raise ValueError("Invalid equation supplied for numeric solving.") from exc
+        if isinstance(expr, Eq):
+            parsed_equations.append(expr.lhs - expr.rhs)
+        else:
+            parsed_equations.append(expr)
+
+    if initial_guess is None:
+        guess = [0.0] * len(variables)
+    else:
+        if len(initial_guess) != len(variables):
+            raise ValueError("Initial guess must provide a value for each variable.")
+        guess = [float(sp.sympify(val)) for val in initial_guess]
+
+    modules = ["numpy"] if np is not None else ["math"]
+    system_lambda = sp.lambdify(var_symbols, parsed_equations, modules=modules)
+
+    def func(values: Sequence[float]) -> list[float]:
+        try:
+            result = system_lambda(*values)
+        except Exception as exc:  # pragma: no cover - defensive branch
+            raise ValueError("Failed to evaluate equations numerically.") from exc
+        if np is not None:
+            result_array = np.asarray(result, dtype=float)
+            return result_array.tolist()
+        if isinstance(result, (list, tuple)):
+            return [float(sp.sympify(val)) for val in result]
+        return [float(sp.sympify(result))]
+
+    max_function_evals = max(max_iterations * len(variables), len(variables) * 50)
+    solution = optimize.root(
+        func,
+        guess,
+        tol=tolerance,
+        options={"maxfev": max_function_evals},
+    )
+    if not solution.success:
+        raise ValueError(f"Numeric solver failed: {solution.message}")
+
+    solved_values: dict[str, float] = {}
+    for name, value in zip(variables, solution.x):
+        solved_values[name] = float(value)
+    return solved_values
+
+
+def gradient_expr(expr_str: str, variables: list[str]) -> list[sp.Expr]:
     """Compute the gradient (vector of partial derivatives) of an expression."""
 
     if not variables:
@@ -587,7 +716,7 @@ def gradient_expr(expr_str: str, variables: list[str]):
     return gradient
 
 
-def hessian_expr(expr_str: str, variables: list[str]):
+def hessian_expr(expr_str: str, variables: list[str]) -> Matrix:
     """Compute the Hessian matrix of second-order partial derivatives."""
 
     if not variables:

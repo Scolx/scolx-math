@@ -21,21 +21,20 @@
 - ✅ Matrix and linear algebra operations
 - ✅ Plotting and visualization capabilities
 - ✅ Support for differential equations
-- 🔲 Complex number operations
-- 🔲 Statistics and probability functions
-- 🔲 Custom function definitions
+- ✅ Complex number operations
+- ✅ Statistics and probability functions
 
 ## Improvements
 - ✅ Better error handling and validation
 - 🔲 Performance optimization for complex expressions
-- 🔲 More detailed step-by-step explanations
+- ✅ More detailed step-by-step explanations
 - ✅ Docker containerization
 - ✅ CI/CD pipeline setup
-- 🔲 Health check endpoints (e.g. /livez, /readyz, /startupz)
+- ✅ Health check endpoints (e.g. /livez, /readyz, /startupz)
 
 ## Bug Fixes
-- 🔲 Verify LaTeX parsing edge cases
-- 🔲 Handle complex infinity and undefined results gracefully
+- ✅ Verify LaTeX parsing edge cases
+- ✅ Handle complex infinity and undefined results gracefully
 - 🔲 Improve handling of unsolvable equations
 
 ## Documentation

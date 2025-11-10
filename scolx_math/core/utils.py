@@ -25,7 +25,8 @@ def get_threadpool_executor() -> ThreadPoolExecutor:
 
         max_workers = min(32, (os.cpu_count() or 1) + 4)
         _threadpool_executor = ThreadPoolExecutor(
-            max_workers=max_workers, thread_name_prefix="math_op"
+            max_workers=max_workers,
+            thread_name_prefix="math_op",
         )
     return _threadpool_executor
 
@@ -36,7 +37,7 @@ def run_cpu_bound(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
     executor = get_threadpool_executor()
     if kwargs:
 
-        def wrapper():
+        def wrapper() -> T:
             return func(*args, **kwargs)
 
         future = executor.submit(wrapper)
@@ -46,20 +47,21 @@ def run_cpu_bound(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
 
 
 async def run_cpu_bound_async(
-    func: Callable[P, T], *args: P.args, **kwargs: P.kwargs
+    func: Callable[P, T],
+    *args: P.args,
+    **kwargs: P.kwargs,
 ) -> T:
     """Execute a CPU-bound function in a threadpool asynchronously."""
     if kwargs:
         # If kwargs are provided, wrap in a lambda to avoid issues with run_in_threadpool
-        def wrapper():
+        def wrapper() -> T:
             return func(*args, **kwargs)
 
         return await run_in_threadpool(wrapper)
-    else:
-        return await run_in_threadpool(func, *args)
+    return await run_in_threadpool(func, *args)
 
 
-def cleanup_threadpool():
+def cleanup_threadpool() -> None:
     """Clean up the threadpool executor."""
     global _threadpool_executor
     if _threadpool_executor is not None:

@@ -159,7 +159,8 @@ def integrate_latex_with_steps(latex_expr: str, var_name: str) -> tuple[str, lis
 
 
 def solve_equation_latex_with_steps(
-    latex_eq: str, var_name: str
+    latex_eq: str,
+    var_name: str,
 ) -> tuple[list[str], list[str]]:
     """
     Solve a LaTeX equation with step-by-step explanation.
@@ -191,7 +192,8 @@ def solve_equation_latex_with_steps(
 
 
 def differentiate_latex_with_steps(
-    latex_expr: str, var_name: str
+    latex_expr: str,
+    var_name: str,
 ) -> tuple[str, list[str]]:
     """
     Differentiate a LaTeX expression with step-by-step explanation.
@@ -223,7 +225,9 @@ def differentiate_latex_with_steps(
 
 
 def limit_latex_with_steps(
-    latex_expr: str, var_name: str, point: str
+    latex_expr: str,
+    var_name: str,
+    point: str,
 ) -> tuple[str, list[str]]:
     """
     Calculate the limit of a LaTeX expression with step-by-step explanation.
@@ -245,7 +249,7 @@ def limit_latex_with_steps(
     # Create the symbol and point
     var = sp.Symbol(var_name)
     pt = parse_latex_expression(
-        point
+        point,
     )  # Point could also be in LaTeX (e.g., "inf" for infinity)
     steps.append(f"Identifying limit variable: {var_name} approaching {point}")
 
@@ -259,7 +263,10 @@ def limit_latex_with_steps(
 
 
 def series_latex_with_steps(
-    latex_expr: str, var_name: str, point: str = "0", order: int = 6
+    latex_expr: str,
+    var_name: str,
+    point: str = "0",
+    order: int = 6,
 ) -> tuple[str, list[str]]:
     """
     Calculate the series expansion of a LaTeX expression with step-by-step explanation.

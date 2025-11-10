@@ -4,7 +4,7 @@ Scolx Math API is a Python-based mathematical computation service that provides 
 
 ## Features
 
-- **Plain-Text Operations**: Integration, differentiation, gradient and Hessian computation, matrix algebra (determinant, inverse, multiply), differential equation solving (analytic with SymPy or numeric via SciPy), plotting samples, equation solving, and simplification using a hardened SymPy parser with optional SymEngine acceleration
+- **Plain-Text Operations**: Integration, differentiation, gradient and Hessian computation, matrix algebra (determinant, inverse, multiply), differential equation solving (analytic with SymPy or numeric via SciPy), complex number utilities, statistics/probability functions, numeric root solving, plotting samples, equation solving, and simplification using a hardened SymPy parser with optional SymEngine acceleration
 - **LaTeX Operations**: Integration, differentiation, solving, limits, and series expansion with detailed steps
 - **Step-by-Step Explanations**: Optional breakdown for supported operations
 - **RESTful API**: FastAPI-based web service with structured validation and error handling

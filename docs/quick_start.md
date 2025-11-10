@@ -90,7 +90,24 @@ pytest
 pytest --cov=scolx_math
 ```
 
-## 7. Examples
+## 7. Running Benchmarks
+
+Measure performance of heavy-weight operations to track optimization progress:
+
+```bash
+python -m benchmarks.heavy_operations
+```
+
+Optional arguments:
+
+```bash
+# Run only selected cases with custom iterations/warmup counts
+python -m benchmarks.heavy_operations --case matrix_inverse_6x6 --iterations 10 --warmup 2
+```
+
+> **Note:** Numeric solver benchmarks require SciPy; cases will be skipped automatically when the dependency is missing.
+
+## 8. Examples
 
 Run the included examples to see the API in action:
 

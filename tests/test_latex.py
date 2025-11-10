@@ -7,7 +7,7 @@ from scolx_math.api.main import app
 client = TestClient(app)
 
 
-def test_latex_integration():
+def test_latex_integration() -> None:
     """Test integral calculation with LaTeX input."""
     response = client.post(
         "/solve",
@@ -25,7 +25,7 @@ def test_latex_integration():
     assert "steps" in data
 
 
-def test_latex_normalization_handles_left_right():
+def test_latex_normalization_handles_left_right() -> None:
     """Expressions with left/right should be normalized before parsing."""
     response = client.post(
         "/solve",
@@ -42,7 +42,7 @@ def test_latex_normalization_handles_left_right():
     assert data["result"] == "2*x"
 
 
-def test_latex_unmatched_braces_returns_error():
+def test_latex_unmatched_braces_returns_error() -> None:
     """Invalid LaTeX inputs should return a validation error."""
     response = client.post(
         "/solve",
@@ -60,7 +60,7 @@ def test_latex_unmatched_braces_returns_error():
     # The result should be equivalent to x^3/3 (though possibly in different form)
 
 
-def test_latex_differentiation():
+def test_latex_differentiation() -> None:
     """Test derivative calculation with LaTeX input."""
     response = client.post(
         "/solve",
@@ -79,7 +79,7 @@ def test_latex_differentiation():
     # The result should be equivalent to 3*x^2
 
 
-def test_latex_equation_solving():
+def test_latex_equation_solving() -> None:
     """Test equation solving with LaTeX input."""
     response = client.post(
         "/solve",
@@ -98,7 +98,7 @@ def test_latex_equation_solving():
     assert len(data["result"]) >= 2  # Should have at least two solutions
 
 
-def test_latex_limit():
+def test_latex_limit() -> None:
     """Test limit calculation with LaTeX input."""
     response = client.post(
         "/solve",
@@ -117,7 +117,7 @@ def test_latex_limit():
     assert "steps" in data
 
 
-def test_latex_series():
+def test_latex_series() -> None:
     """Test series expansion with LaTeX input."""
     response = client.post(
         "/solve",

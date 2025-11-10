@@ -39,7 +39,7 @@ _SAFE_LOCALS: dict[str, sp.Function | sp.Basic] = {
 }
 _SYMBOL_PATTERN = re.compile(r"^[A-Za-z]\w*$")
 
-__all__ = ["parse_plain_expression", "validate_variable_name", "get_safe_locals"]
+__all__ = ["get_safe_locals", "parse_plain_expression", "validate_variable_name"]
 
 
 def validate_variable_name(name: str) -> str:
@@ -48,7 +48,7 @@ def validate_variable_name(name: str) -> str:
     if not name or not _SYMBOL_PATTERN.match(name):
         raise ValueError(
             "Invalid variable name. Use alphanumeric characters or underscores, "
-            "starting with a letter."
+            "starting with a letter.",
         )
     return name
 
@@ -63,7 +63,8 @@ def _ensure_safe_symbols(expr: sp.Expr) -> None:
 
 
 def parse_plain_expression(
-    expr_str: str, variables: Iterable[str] | None = None
+    expr_str: str,
+    variables: Iterable[str] | None = None,
 ) -> sp.Expr:
     """Parse a plain-text expression into a SymPy expression using a safe namespace."""
 

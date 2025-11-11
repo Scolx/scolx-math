@@ -9,13 +9,6 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from typing import Never
 
-from scolx_math.advanced_latex import (
-    differentiate_latex_with_steps,
-    integrate_latex_with_steps,
-    limit_latex_with_steps,
-    series_latex_with_steps,
-    solve_equation_latex_with_steps,
-)
 from scolx_math.core import operations as operations_module
 from scolx_math.core.operations import (
     hessian_expr,
@@ -24,11 +17,6 @@ from scolx_math.core.operations import (
     solve_system_numeric,
 )
 
-LATEX_INTEGRAL_EXPR = r"\frac{\exp\left(x^{2}\right) x^{5}}{1 + x^{2}}"
-LATEX_DERIV_EXPR = r"\sin\!\left(x^{3}\right) + x^{2}"
-LATEX_LIMIT_EXPR = r"\frac{\sin(x)}{x}"
-LATEX_SERIES_EXPR = r"e^{x}"
-LATEX_SOLVE_EXPR = r"x^{6} - 3 x^{3} + 1"
 SERIES_EXPRESSION = "exp(sin(x)) + log(1 + x)"
 HESSIAN_EXPRESSION = "x**4 + y**4 + z**4 + w**4 + x*y*z*w + sin(x*y) * cos(z*w)"
 MATRIX_6X6 = [[i * 6 + j + 1 for j in range(6)] for i in range(6)]
@@ -73,14 +61,6 @@ class BenchmarkResult:
     message: str | None = None
 
 
-def _benchmark_latex_integral() -> None:
-    integrate_latex_with_steps(LATEX_INTEGRAL_EXPR, "x")
-
-
-def _benchmark_latex_solve() -> None:
-    solve_equation_latex_with_steps(LATEX_SOLVE_EXPR, "x")
-
-
 def _benchmark_series() -> None:
     series_expr(SERIES_EXPRESSION, "x", "0", 20)
 
@@ -107,49 +87,7 @@ def _benchmark_numeric_solver() -> None:
     )
 
 
-def _benchmark_latex_derivative() -> None:
-    differentiate_latex_with_steps(LATEX_DERIV_EXPR, "x")
-
-
-def _benchmark_latex_limit() -> None:
-    limit_latex_with_steps(LATEX_LIMIT_EXPR, "x", "0")
-
-
-def _benchmark_latex_series() -> None:
-    series_latex_with_steps(LATEX_SERIES_EXPR, "x", "0", 10)
-
-
 CASES: list[BenchmarkCase] = [
-    BenchmarkCase(
-        "latex_integral_complex",
-        _benchmark_latex_integral,
-        warmup_runs=1,
-        iterations=3,
-    ),
-    BenchmarkCase(
-        "latex_solve_polynomial",
-        _benchmark_latex_solve,
-        warmup_runs=1,
-        iterations=3,
-    ),
-    BenchmarkCase(
-        "latex_derivative_mixed",
-        _benchmark_latex_derivative,
-        warmup_runs=1,
-        iterations=3,
-    ),
-    BenchmarkCase(
-        "latex_limit_sin_over_x",
-        _benchmark_latex_limit,
-        warmup_runs=1,
-        iterations=3,
-    ),
-    BenchmarkCase(
-        "latex_series_expansion",
-        _benchmark_latex_series,
-        warmup_runs=1,
-        iterations=3,
-    ),
     BenchmarkCase("series_high_order", _benchmark_series, warmup_runs=1, iterations=3),
     BenchmarkCase(
         "matrix_inverse_6x6",

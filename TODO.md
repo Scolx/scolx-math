@@ -4,19 +4,17 @@
 - ✅ Hardened plain-text mathematical operations (integration, differentiation, solving equations, simplification, limits, series)
 - ✅ FastAPI-based REST API with request validation and error handling
 - ✅ Step-by-Step explanations for mathematical operations
-- ✅ LaTeX parsing support
-- ✅ Support for both plain text and LaTeX expressions
 - ✅ Integration with SymPy for symbolic computation
 - ✅ Example usage code
 - ✅ High-level documentation (README + docs/)
-- ✅ Comprehensive test suite (API, LaTeX, and smoke tests)
+- ✅ Comprehensive test suite (API and smoke tests)
 - ✅ Safe expression parsing with whitelisted functions and constants
 - ✅ Optional SymEngine acceleration for faster computations
-- ✅ Support for limits and series expansion (both plain text and LaTeX)
+- ✅ Support for limits and series expansion (plain text)
 - ✅ Proper error handling and validation for all operations
 
 ## Planned Features
-- ✅ Enhanced LaTeX parsing with more comprehensive support
+
 - ✅ Support for multivariate calculus
 - ✅ Matrix and linear algebra operations
 - ✅ Plotting and visualization capabilities
@@ -31,10 +29,10 @@
 - ✅ Docker containerization
 - ✅ CI/CD pipeline setup
 - ✅ Health check endpoints (e.g. /livez, /readyz, /startupz)
-- 🔲 Unified LaTeX support: Refactor API to use is_latex parameter instead of separate operation types
+
 
 ## Bug Fixes
-- ✅ Verify LaTeX parsing edge cases
+
 - ✅ Handle complex infinity and undefined results gracefully
 - 🔲 Improve handling of unsolvable equations
 

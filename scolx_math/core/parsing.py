@@ -42,7 +42,6 @@ _SYMBOL_PATTERN = re.compile(r"^[A-Za-z]\w*$")
 __all__ = [
     "get_safe_locals",
     "parse_expression",
-    "parse_latex_expression",
     "parse_plain_expression",
     "validate_variable_name",
 ]
@@ -91,37 +90,20 @@ def parse_plain_expression(
     return expr
 
 
-def parse_latex_expression(latex_expr: str) -> sp.Expr:
-    """
-    Parse a LaTeX mathematical expression into a SymPy expression.
-
-    This function is imported from advanced_latex module to avoid circular imports.
-    """
-    from scolx_math.advanced_latex import (
-        parse_latex_expression as _parse_latex_expression,
-    )
-
-    return _parse_latex_expression(latex_expr)
-
-
 def parse_expression(
     expr_str: str,
-    is_latex: bool,
     variables: Iterable[str] | None = None,
 ) -> sp.Expr:
     """
-    Parse an expression that can be either plain text or LaTeX based on the is_latex flag.
+    Parse an expression in plain text using a safe namespace.
 
     Args:
         expr_str: The expression string to parse
-        is_latex: Whether the expression is in LaTeX format
         variables: Optional variables to include in the parsing context
 
     Returns:
         The parsed SymPy expression
     """
-    if is_latex:
-        return parse_latex_expression(expr_str)
     return parse_plain_expression(expr_str, variables)
 
 

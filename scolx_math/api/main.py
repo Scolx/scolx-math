@@ -127,10 +127,6 @@ class MathRequest(BaseModel):
     point: str | None = Field(None, description="Point for limit/series operations")
     order: int = Field(6, description="Series expansion order")
     steps: bool = Field(default=True, description="Include step-by-step explanations")
-    is_latex: bool = Field(
-        default=False,
-        description="Whether expression is provided as LaTeX",
-    )
     plot_range: tuple[str, str] | None = Field(
         None,
         description="Tuple specifying start and end for plotting",
@@ -554,8 +550,7 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
 
     This endpoint handles various mathematical operations including integration,
     differentiation, equation solving, limits, series expansions, and simplification.
-    It supports both plain text and LaTeX expressions with optional step-by-step
-    explanations.
+    It supports plain text expressions with optional step-by-step explanations.
 
     Args:
         req: Mathematical operation request with expression and parameters
@@ -564,33 +559,29 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
         Dictionary containing result and optional step-by-step explanations
     """
     try:
-        # Operations that support both plain text and LaTeX via is_latex flag
+        # Operations handler
         if req.type is OperationType.INTEGRAL:
             return await MathOperationService.handle_integral(
                 req.expression,
                 req.variable,
                 steps=req.steps,
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.DERIVATIVE:
             return await MathOperationService.handle_derivative(
                 req.expression,
                 req.variable,
                 steps=req.steps,
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.SOLVE:
             return await MathOperationService.handle_solve(
                 req.expression,
                 req.variable,
                 steps=req.steps,
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.SIMPLIFY:
             return await MathOperationService.handle_simplify(
                 req.expression,
                 steps=req.steps,
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.LIMIT:
             return await MathOperationService.handle_limit(
@@ -598,7 +589,6 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
                 req.variable,
                 req.point,
                 steps=req.steps,
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.SERIES:
             return await MathOperationService.handle_series(
@@ -607,21 +597,18 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
                 req.point,
                 req.order,
                 steps=req.steps,
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.GRADIENT:
             return await MathOperationService.handle_gradient(
                 req.expression,
                 req.ordered_variables or [],
                 steps=req.steps,
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.HESSIAN:
             return await MathOperationService.handle_hessian(
                 req.expression,
                 req.ordered_variables or [],
                 steps=req.steps,
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.MATRIX_DETERMINANT:
             return await MathOperationService.handle_matrix_determinant(
@@ -646,33 +633,27 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
                 numeric_start=req.numeric_start,
                 numeric_end=req.numeric_end,
                 samples=req.samples,
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.COMPLEX_CONJUGATE:
             return await MathOperationService.handle_complex_conjugate(
                 req.expression,
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.COMPLEX_MODULUS:
             return await MathOperationService.handle_complex_modulus(
                 req.expression,
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.COMPLEX_ARGUMENT:
             return await MathOperationService.handle_complex_argument(
                 req.expression,
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.COMPLEX_TO_POLAR:
             return await MathOperationService.handle_complex_to_polar(
                 req.expression,
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.COMPLEX_FROM_POLAR:
             return await MathOperationService.handle_complex_from_polar(
                 req.polar_radius or "0",
                 req.polar_angle or "0",
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.STATS_MEAN:
             return await MathOperationService.handle_stats_mean(req.stats_values or [])
@@ -692,7 +673,6 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
                 value or "0",
                 mean or "0",
                 std or "1",
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.NORMAL_CDF:
             value, mean, std = req.distribution_parameters
@@ -700,7 +680,6 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
                 value or "0",
                 mean or "0",
                 std or "1",
-                is_latex=req.is_latex,
             )
         if req.type is OperationType.SOLVE_NUMERIC:
             return await MathOperationService.handle_numeric_solve(
@@ -717,7 +696,6 @@ async def solve_math(req: MathRequest) -> dict[str, object]:
                 req.plot_start or "0",
                 req.plot_end or "0",
                 req.samples,
-                is_latex=req.is_latex,
             )
 
         raise HTTPException(

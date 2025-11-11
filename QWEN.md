@@ -26,7 +26,7 @@ The project uses SymPy for symbolic computation and FastAPI for the web interfac
 scolx-math/
 ├── scolx_math/                 # Main package
 │   ├── __init__.py
-│   ├── advanced_latex.py       # LaTeX parsing and advanced operations
+
 │   ├── api/
 │   │   ├── __init__.py
 │   │   └── main.py             # FastAPI application and endpoints
@@ -39,7 +39,7 @@ scolx-math/
 │       └── explainers.py       # Step-by-step explanation generators
 ├── tests/                      # Test suite
 │   ├── test_api.py             # API endpoint tests
-│   ├── test_latex.py           # LaTeX functionality tests
+
 │   └── test_smoke.py           # Basic integration test
 ├── docs/                       # Documentation
 │   ├── documentation.md        # Comprehensive documentation
@@ -64,7 +64,7 @@ scolx-math/
 - **numpy**: Numerical computations
 - **scipy**: Scientific computing
 - **pydantic**: Data validation and settings management
-- **antlr4-python3-runtime==4.11**: ANTLR runtime for LaTeX parsing
+
 
 ### Development Dependencies
 - **black**: Code formatter
@@ -106,31 +106,20 @@ scolx-math/
   - `series_with_steps(expr, var, point, order)`: Series expansion with explanation steps
   - `simplify_with_steps(expr)`: Simplification with explanation steps
 
-### LaTeX Processing
-- `scolx_math.advanced_latex`: New module for LaTeX parsing and advanced operations:
-  - `parse_latex_expression(latex_expr)`: Convert LaTeX to SymPy expression
-  - `integrate_latex_with_steps(latex_expr, var_name)`: LaTeX integration with steps
-  - `solve_equation_latex_with_steps(latex_eq, var_name)`: LaTeX equation solving with steps
-  - `differentiate_latex_with_steps(latex_expr, var_name)`: LaTeX differentiation with steps
-  - `limit_latex_with_steps(latex_expr, var_name, point)`: LaTeX limit calculation with steps
-  - `series_latex_with_steps(latex_expr, var_name, point, order)`: LaTeX series expansion with steps
+
 
 ### API Endpoints
 - `/solve`: Main endpoint that accepts mathematical problems and returns solutions with optional step-by-step explanations
 - `/livez`: Liveness probe
 - `/readyz`: Readiness probe
 - `/startupz`: Startup probe
-- Supports different problem types: integrals, derivatives, equation solving, simplification, limits, series expansion, gradient, Hessian, matrix operations, ODE solving, complex numbers, statistics, plotting, and numeric solving (all implemented for both plain text and LaTeX)
-- Supports both plain text and LaTeX expressions via the `is_latex` flag
+- Supports different problem types: integrals, derivatives, equation solving, simplification, limits, series expansion, gradient, Hessian, matrix operations, ODE solving, complex numbers, statistics, plotting, and numeric solving (all implemented for plain-text expressions)
+- Supports plain-text expressions
 - New parameters: `point` for limit operations, `order` for series expansion, `variables` for multivariate operations, `plot_range` for plotting, `matrix` for matrix operations, and many more
 - Uses Pydantic models for request/response validation
 - Comprehensive validation and error handling for all operation types
 
-### LaTeX Parsing Capabilities
-- Advanced LaTeX parsing using `sympy.parsing.latex.parse_latex()`
-- Support for mathematical expressions in LaTeX format
-- New `advanced_latex` module handles LaTeX-specific operations
-- Available operations with LaTeX: integration, differentiation, equation solving, limits, series expansion
+
 
 ### Plain-Text Operations
 - All mathematical operations now fully implemented for plain-text expressions
@@ -234,18 +223,6 @@ ruff check . --fix
 }
 ```
 
-### Example Request (LaTeX)
-
-```json
-{
-  "type": "integral_latex",
-  "expression": "x^2",
-  "variable": "x",
-  "steps": true,
-  "is_latex": true
-}
-```
-
 ### Example Request (Limit - Plain Text)
 
 ```json
@@ -316,12 +293,12 @@ According to the implementation plan in `Steps.md`, future enhancements may incl
 The project has a comprehensive working implementation with:
 - Integration with step-by-step explanations
 - Differentiation, equation solving, and expression simplification
-- Limits and series expansion (both plain text and LaTeX)
+- Limits and series expansion (plain text)
 - FastAPI web interface with comprehensive validation
-- Complete test coverage for all operations (API, LaTeX, and smoke tests)
+- Complete test coverage for all operations (API and smoke tests)
 - Proper project structure with modular components
 - Code quality tools (black, ruff) configured
 - Safe expression parsing with whitelisted functions and constants
 - Optional SymEngine acceleration for faster computations
-- Support for both plain text and LaTeX mathematical expressions
+- Support for plain-text mathematical expressions
 - Detailed step-by-step explanations for all supported operations

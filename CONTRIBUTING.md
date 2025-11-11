@@ -55,7 +55,6 @@ Thanks for your interest in contributing! This document outlines expectations fo
 
 The project includes multiple test files in the `tests/` directory:
 - `test_api.py`: Tests for basic API endpoints and operations
-- `test_latex.py`: Tests for LaTeX parsing functionality
 - `test_smoke.py`: Basic smoke tests
 
 When adding new functionality, add appropriate tests to the relevant test file or create a new one if needed.

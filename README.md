@@ -1,14 +1,13 @@
 # Scolx Math API
 
-Scolx Math API is a Python-based mathematical computation service that provides step-by-step solutions to mathematical problems. It supports both plain text and LaTeX mathematical expressions, offering integration, differentiation, equation solving, simplification, limits, series expansion, gradient, Hessian, matrix operations, differential equations, complex numbers, statistics, plotting, and numeric solving capabilities.
+Scolx Math API is a Python-based mathematical computation service that provides step-by-step solutions to mathematical problems. It supports plain-text mathematical expressions, offering integration, differentiation, equation solving, simplification, limits, series expansion, gradient, Hessian, matrix operations, differential equations, complex numbers, statistics, plotting, and numeric solving capabilities.
 
 ## Features
 
 - **Plain-Text Operations**: Integration, differentiation, gradient and Hessian computation, matrix algebra (determinant, inverse, multiply), differential equation solving (analytic with SymPy or numeric via SciPy), complex number utilities, statistics/probability functions, numeric root solving, plotting samples, equation solving, and simplification using a hardened SymPy parser with optional SymEngine acceleration
-- **LaTeX Operations**: Integration, differentiation, solving, limits, series expansion, gradient, Hessian, matrix operations, ODE, complex numbers, statistics, and numeric solving with detailed steps
 - **Step-by-Step Explanations**: Optional breakdown for supported operations
 - **RESTful API**: FastAPI-based web service with structured validation and error handling
-- **Flexible Input**: Safe plain-text parsing plus dedicated LaTeX workflows
+- **Flexible Input**: Safe plain-text parsing
 - **Health Checks**: Built-in health check endpoints for liveness, readiness, and startup
 
 ## Installation
@@ -79,16 +78,7 @@ Once running, you can access:
 }
 ```
 
-#### Integration (LaTeX)
-```json
-{
-  "type": "integral_latex",
-  "expression": "x^2",
-  "variable": "x",
-  "steps": true,
-  "is_latex": true
-}
-```
+ 
 
 #### Gradient (Plain Text)
 ```json
@@ -120,16 +110,7 @@ Once running, you can access:
 }
 ```
 
-#### Equation Solving (LaTeX)
-```json
-{
-  "type": "solve_latex",
-  "expression": "x^2 - 4",
-  "variable": "x",
-  "steps": true,
-  "is_latex": true
-}
-```
+ 
 
 #### Statistics - Mean Calculation
 ```json
@@ -170,9 +151,9 @@ Once running, you can access:
 ### Using the Python Modules Directly
 
 ```python
-from scolx_math.advanced_latex import integrate_latex_with_steps
+from scolx_math.explain.explainers import differentiate_with_steps
 
-result, steps = integrate_latex_with_steps("x^2", "x")
+result, steps = differentiate_with_steps("x**3", "x")
 print(f"Result: {result}")
 print("Steps:")
 for step in steps:
@@ -185,7 +166,6 @@ for step in steps:
 scolx-math/
 ├── scolx_math/                 # Main package
 │   ├── __init__.py
-│   ├── advanced_latex.py       # LaTeX parsing and advanced operations
 │   ├── api/
 │   │   ├── __init__.py
 │   │   └── main.py             # FastAPI application and endpoints
@@ -198,7 +178,6 @@ scolx-math/
 │       └── explainers.py       # Step-by-step explanation generators
 ├── tests/                      # Test suite
 │   ├── test_api.py             # API endpoint tests
-│   ├── test_latex.py           # LaTeX functionality tests
 │   └── test_smoke.py           # Basic integration test
 ├── docs/                       # Documentation
 │   ├── documentation.md        # Comprehensive documentation
@@ -219,7 +198,7 @@ Run the test suite with:
 pytest
 ```
 
-All mathematical operations are now implemented including limits and series expansion for both plain text and LaTeX expressions. Integration, differentiation, and simplification automatically leverage SymEngine when available for faster results.
+All mathematical operations are now implemented including limits and series expansion for plain-text expressions. Integration, differentiation, and simplification automatically leverage SymEngine when available for faster results.
 
 ## Error Handling
 
@@ -228,7 +207,7 @@ The API performs rigorous request validation. Invalid payloads return `422 Unpro
 ## Security Considerations
 
 - Plain-text expressions are parsed with a constrained SymPy namespace to mitigate code-injection risks.
-- Validation rules enforce required fields (e.g., variables, limit points) and prevent mismatched LaTeX/plain-text combinations.
+- Validation rules enforce required fields (e.g., variables, limit points).
 
 ## Dependencies
 
@@ -239,7 +218,7 @@ The API performs rigorous request validation. Invalid payloads return `422 Unpro
 - `numpy`: Numerical computations
 - `scipy`: Scientific computing
 - `pydantic`: Data validation
-- `antlr4-python3-runtime==4.11`: ANTLR runtime for LaTeX parsing
+ 
 
 Development tooling additionally uses `pytest`, `httpx`, `black`, and `ruff` (see `requirements-dev.txt`).
 

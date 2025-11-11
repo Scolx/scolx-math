@@ -7,13 +7,6 @@ from typing import Any
 
 import sympy as sp
 
-from scolx_math.advanced_latex import (
-    differentiate_latex_with_steps,
-    integrate_latex_with_steps,
-    limit_latex_with_steps,
-    series_latex_with_steps,
-    solve_equation_latex_with_steps,
-)
 from scolx_math.core.operations import (
     complex_argument_expr,
     complex_conjugate_expr,
@@ -71,8 +64,8 @@ class MathOperationService:
 
     This service provides a unified interface for performing various mathematical
     operations including integration, differentiation, equation solving, limits,
-    series expansions, and simplification. It supports both plain text and LaTeX
-    expressions with optional step-by-step explanations.
+    series expansions, and simplification. It supports plain-text expressions
+    with optional step-by-step explanations.
     """
 
     @staticmethod
@@ -81,44 +74,32 @@ class MathOperationService:
         variable: str,
         *,
         steps: bool,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
-        """Handle integral operations (supports both plain text and LaTeX).
+        """Handle integral operations.
 
         Args:
-            expression: Mathematical expression to integrate (plain text or LaTeX)
+            expression: Mathematical expression to integrate (plain text)
             variable: Variable to integrate with respect to
             steps: Whether to include step-by-step explanations
-            is_latex: Whether the expression is in LaTeX format
 
         Returns:
             Dictionary containing result string and steps list
         """
         try:
             if steps:
-                if is_latex:
-                    result, all_steps = await run_cpu_bound_async(
-                        integrate_latex_with_steps,
-                        expression,
-                        variable,
-                    )
-                else:
-                    result, all_steps = await run_cpu_bound_async(
-                        integrate_with_steps,
-                        expression,
-                        variable,
-                    )
+                result, all_steps = await run_cpu_bound_async(
+                    integrate_with_steps,
+                    expression,
+                    variable,
+                )
                 return {
                     "result": _stringify_result(result),
                     "steps": all_steps if steps else [],
                 }
 
-            # For non-step case, parse based on is_latex flag and use core operation
-            expr = parse_expression(expression, is_latex, [variable])
-            var = parse_expression(
-                variable,
-                is_latex=False,
-            )  # Variable names are always plain text
+            # For non-step case, parse and use core operation
+            expr = parse_expression(expression, [variable])
+            var = parse_expression(variable)  # Variable names are always plain text
             se_result = None
             try:
                 import symengine as se
@@ -150,39 +131,29 @@ class MathOperationService:
         variable: str,
         *,
         steps: bool,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
-        """Handle derivative operations (supports both plain text and LaTeX).
+        """Handle derivative operations.
 
         Args:
-            expression: Mathematical expression to differentiate (plain text or LaTeX)
+            expression: Mathematical expression to differentiate (plain text)
             variable: Variable to differentiate with respect to
             steps: Whether to include step-by-step explanations
-            is_latex: Whether the expression is in LaTeX format
 
         Returns:
             Dictionary containing result string and steps list
         """
         try:
             if steps:
-                if is_latex:
-                    result, all_steps = await run_cpu_bound_async(
-                        differentiate_latex_with_steps,
-                        expression,
-                        variable,
-                    )
-                else:
-                    result, detailed_steps = await run_cpu_bound_async(
-                        differentiate_with_steps,
-                        expression,
-                        variable,
-                    )
-                    all_steps = detailed_steps
+                result, all_steps = await run_cpu_bound_async(
+                    differentiate_with_steps,
+                    expression,
+                    variable,
+                )
                 return {"result": _stringify_result(result), "steps": all_steps}
 
             # For non-step case
-            expr = parse_expression(expression, is_latex, [variable])
-            var = parse_expression(variable, is_latex=False)
+            expr = parse_expression(expression, [variable])
+            var = parse_expression(variable)
 
             se_result = None
             try:
@@ -215,45 +186,32 @@ class MathOperationService:
         variable: str,
         *,
         steps: bool,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
-        """Handle equation solving operations (supports both plain text and LaTeX).
+        """Handle equation solving operations.
 
         Args:
-            expression: Mathematical equation to solve (plain text or LaTeX)
+            expression: Mathematical equation to solve (plain text)
             variable: Variable to solve for
             steps: Whether to include step-by-step explanations
-            is_latex: Whether the expression is in LaTeX format
 
         Returns:
             Dictionary containing result list and steps list
         """
         try:
             if steps:
-                if is_latex:
-                    result, all_steps = await run_cpu_bound_async(
-                        solve_equation_latex_with_steps,
-                        expression,
-                        variable,
-                    )
-                else:
-                    result, detailed_steps = await run_cpu_bound_async(
-                        solve_with_steps,
-                        expression,
-                        variable,
-                    )
-                    all_steps = detailed_steps
+                result, all_steps = await run_cpu_bound_async(
+                    solve_with_steps,
+                    expression,
+                    variable,
+                )
                 return {
                     "result": _stringify_result(result),
                     "steps": all_steps,
                 }
 
             # For non-step case
-            if is_latex:
-                expr = parse_expression(expression, is_latex, [variable])
-            else:
-                expr = parse_expression(expression, is_latex, [variable])
-            var = parse_expression(variable, is_latex=False)
+            expr = parse_expression(expression, [variable])
+            var = parse_expression(variable)
             equation = sp.Eq(expr, 0)
             result = sp.solve(equation, var)
             return {"result": _stringify_result(result), "steps": []}
@@ -266,40 +224,28 @@ class MathOperationService:
         expression: str,
         *,
         steps: bool,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
-        """Handle simplification operations (supports both plain text and LaTeX).
+        """Handle simplification operations.
 
         Args:
-            expression: Mathematical expression to simplify (plain text or LaTeX)
+            expression: Mathematical expression to simplify (plain text)
             steps: Whether to include step-by-step explanations
-            is_latex: Whether the expression is in LaTeX format
 
         Returns:
             Dictionary containing result string and steps list
         """
         try:
             if steps:
-                if is_latex:
-                    # For LaTeX simplify, we need to parse it first, then use the regular simplification
-                    expr = parse_expression(expression, is_latex)
-                    from scolx_math.explain.explainers import simplify_with_steps
+                from scolx_math.explain.explainers import simplify_with_steps
 
-                    result, detailed_steps = await run_cpu_bound_async(
-                        simplify_with_steps,
-                        str(expr),  # Pass as plain text to the step function
-                    )
-                else:
-                    from scolx_math.explain.explainers import simplify_with_steps
-
-                    result, detailed_steps = await run_cpu_bound_async(
-                        simplify_with_steps,
-                        expression,
-                    )
+                result, detailed_steps = await run_cpu_bound_async(
+                    simplify_with_steps,
+                    expression,
+                )
                 return {"result": _stringify_result(result), "steps": detailed_steps}
 
             # For non-step case
-            expr = parse_expression(expression, is_latex)
+            expr = parse_expression(expression)
 
             se_result = None
             try:
@@ -332,48 +278,35 @@ class MathOperationService:
         point: str,
         *,
         steps: bool,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
-        """Handle limit operations (supports both plain text and LaTeX).
+        """Handle limit operations.
 
         Args:
-            expression: Mathematical expression for limit (plain text or LaTeX)
+            expression: Mathematical expression for limit (plain text)
             variable: Variable for the limit
             point: Point at which to calculate the limit
             steps: Whether to include step-by-step explanations
-            is_latex: Whether the expression is in LaTeX format
 
         Returns:
             Dictionary containing result string and steps list
         """
         try:
             if steps:
-                if is_latex:
-                    result, all_steps = await run_cpu_bound_async(
-                        limit_latex_with_steps,
-                        expression,
-                        variable,
-                        point,
-                    )
-                else:
-                    result, all_steps = await run_cpu_bound_async(
-                        limit_with_steps,
-                        expression,
-                        variable,
-                        point,
-                    )
+                result, all_steps = await run_cpu_bound_async(
+                    limit_with_steps,
+                    expression,
+                    variable,
+                    point,
+                )
                 return {
                     "result": _stringify_result(result),
                     "steps": all_steps if steps else [],
                 }
 
             # For non-step case
-            expr = parse_expression(expression, is_latex, [variable])
-            var = parse_expression(variable, is_latex=False)
-            pt = parse_expression(
-                point,
-                is_latex,
-            )  # Point might also be a LaTeX expression
+            expr = parse_expression(expression, [variable])
+            var = parse_expression(variable)
+            pt = parse_expression(point)
 
             result = sp.limit(expr, var, pt)
             return {"result": _stringify_result(result), "steps": []}
@@ -389,48 +322,37 @@ class MathOperationService:
         order: int,
         *,
         steps: bool,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
-        """Handle series operations (supports both plain text and LaTeX).
+        """Handle series operations.
 
         Args:
-            expression: Mathematical expression for series expansion (plain text or LaTeX)
+            expression: Mathematical expression for series expansion (plain text)
             variable: Variable for the series expansion
             point: Point around which to expand (default 0 for Maclaurin series)
             order: Order of the expansion
             steps: Whether to include step-by-step explanations
-            is_latex: Whether the expression is in LaTeX format
 
         Returns:
             Dictionary containing result string and steps list
         """
         try:
             if steps:
-                if is_latex:
-                    result, all_steps = await run_cpu_bound_async(
-                        series_latex_with_steps,
-                        expression,
-                        variable,
-                        point,
-                        order,
-                    )
-                else:
-                    result, all_steps = await run_cpu_bound_async(
-                        series_with_steps,
-                        expression,
-                        variable,
-                        point,
-                        order,
-                    )
+                result, all_steps = await run_cpu_bound_async(
+                    series_with_steps,
+                    expression,
+                    variable,
+                    point,
+                    order,
+                )
                 return {
                     "result": _stringify_result(result),
                     "steps": all_steps if steps else [],
                 }
 
             # For non-step case
-            expr = parse_expression(expression, is_latex, [variable])
-            var = parse_expression(variable, is_latex=False)
-            pt = parse_expression(point, is_latex)
+            expr = parse_expression(expression, [variable])
+            var = parse_expression(variable)
+            pt = parse_expression(point)
 
             result = sp.series(expr, var, pt, n=order)
             return {"result": _stringify_result(result), "steps": []}
@@ -444,22 +366,20 @@ class MathOperationService:
         variables: list[str],
         *,
         steps: bool,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
         """Handle gradient calculations for multivariate expressions.
 
         Args:
-            expression: Mathematical expression for gradient (plain text or LaTeX)
+            expression: Mathematical expression for gradient (plain text)
             variables: Variables to differentiate with respect to
             steps: Whether to include step-by-step explanations
-            is_latex: Whether the expression is in LaTeX format
 
         Returns:
             Dictionary containing result list and steps list
         """
         try:
-            # Parse the expression based on whether it's LaTeX
-            expr = parse_expression(expression, is_latex, variables)
+            # Parse the expression
+            expr = parse_expression(expression, variables)
             sym_vars = [sp.Symbol(var) for var in variables]
 
             # Calculate gradient
@@ -492,7 +412,6 @@ class MathOperationService:
         numeric_start: str | None,
         numeric_end: str | None,
         samples: int,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
         """Solve an ordinary differential equation."""
         try:
@@ -559,13 +478,11 @@ class MathOperationService:
     @staticmethod
     async def handle_complex_conjugate(
         expression: str,
-        *,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
-        """Handle complex conjugate (supports both plain text and LaTeX)."""
+        """Handle complex conjugate."""
         try:
-            # Parse the expression based on whether it's LaTeX
-            expr = parse_expression(expression, is_latex)
+            # Parse the expression
+            expr = parse_expression(expression)
             result = await run_cpu_bound_async(complex_conjugate_expr, str(expr))
         except Exception as e:  # pragma: no cover - defensive
             error_msg = f"Error computing complex conjugate: {e!s}"
@@ -575,13 +492,11 @@ class MathOperationService:
     @staticmethod
     async def handle_complex_modulus(
         expression: str,
-        *,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
-        """Handle complex modulus (supports both plain text and LaTeX)."""
+        """Handle complex modulus."""
         try:
-            # Parse the expression based on whether it's LaTeX
-            expr = parse_expression(expression, is_latex)
+            # Parse the expression
+            expr = parse_expression(expression)
             result = await run_cpu_bound_async(complex_modulus_expr, str(expr))
         except Exception as e:  # pragma: no cover - defensive
             error_msg = f"Error computing complex modulus: {e!s}"
@@ -591,13 +506,11 @@ class MathOperationService:
     @staticmethod
     async def handle_complex_argument(
         expression: str,
-        *,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
-        """Handle complex argument (supports both plain text and LaTeX)."""
+        """Handle complex argument."""
         try:
-            # Parse the expression based on whether it's LaTeX
-            expr = parse_expression(expression, is_latex)
+            # Parse the expression
+            expr = parse_expression(expression)
             result = await run_cpu_bound_async(complex_argument_expr, str(expr))
         except Exception as e:  # pragma: no cover - defensive
             error_msg = f"Error computing complex argument: {e!s}"
@@ -607,13 +520,11 @@ class MathOperationService:
     @staticmethod
     async def handle_complex_to_polar(
         expression: str,
-        *,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
-        """Handle complex to polar conversion (supports both plain text and LaTeX)."""
+        """Handle complex to polar conversion."""
         try:
-            # Parse the expression based on whether it's LaTeX
-            expr = parse_expression(expression, is_latex)
+            # Parse the expression
+            expr = parse_expression(expression)
             magnitude, angle = await run_cpu_bound_async(
                 complex_to_polar_expr,
                 str(expr),
@@ -630,14 +541,12 @@ class MathOperationService:
     async def handle_complex_from_polar(
         radius: str,
         angle: str,
-        *,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
-        """Handle complex from polar conversion (supports both plain text and LaTeX)."""
+        """Handle complex from polar conversion."""
         try:
-            # Parse the radius and angle based on whether they're in LaTeX
-            radius_expr = parse_expression(radius, is_latex)
-            angle_expr = parse_expression(angle, is_latex)
+            # Parse the radius and angle
+            radius_expr = parse_expression(radius)
+            angle_expr = parse_expression(angle)
             result = await run_cpu_bound_async(
                 complex_from_polar_expr,
                 str(radius_expr),
@@ -692,14 +601,12 @@ class MathOperationService:
         value: str,
         mean: str,
         std: str,
-        *,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
         try:
-            # Parse the value, mean, and std based on whether they're in LaTeX
-            value_expr = parse_expression(value, is_latex)
-            mean_expr = parse_expression(mean, is_latex)
-            std_expr = parse_expression(std, is_latex)
+            # Parse the value, mean, and std
+            value_expr = parse_expression(value)
+            mean_expr = parse_expression(mean)
+            std_expr = parse_expression(std)
             result = await run_cpu_bound_async(
                 normal_pdf,
                 str(value_expr),
@@ -716,14 +623,12 @@ class MathOperationService:
         value: str,
         mean: str,
         std: str,
-        *,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
         try:
-            # Parse the value, mean, and std based on whether they're in LaTeX
-            value_expr = parse_expression(value, is_latex)
-            mean_expr = parse_expression(mean, is_latex)
-            std_expr = parse_expression(std, is_latex)
+            # Parse the value, mean, and std
+            value_expr = parse_expression(value)
+            mean_expr = parse_expression(mean)
+            std_expr = parse_expression(std)
             result = await run_cpu_bound_async(
                 normal_cdf,
                 str(value_expr),
@@ -764,22 +669,20 @@ class MathOperationService:
         variables: list[str],
         *,
         steps: bool,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
         """Handle Hessian matrix calculations for multivariate expressions.
 
         Args:
-            expression: Mathematical expression for Hessian (plain text or LaTeX)
+            expression: Mathematical expression for Hessian (plain text)
             variables: Variables for partial derivatives
             steps: Whether to include step-by-step explanations
-            is_latex: Whether the expression is in LaTeX format
 
         Returns:
             Dictionary containing result matrix and steps list
         """
         try:
-            # Parse the expression based on whether it's LaTeX
-            expr = parse_expression(expression, is_latex, variables)
+            # Parse the expression
+            expr = parse_expression(expression, variables)
             sym_vars = [sp.Symbol(var) for var in variables]
 
             # Calculate Hessian
@@ -808,16 +711,14 @@ class MathOperationService:
         start: str,
         end: str,
         samples: int,
-        *,
-        is_latex: bool = False,
     ) -> dict[str, Any]:
-        """Sample an expression over a range for plotting (supports both plain text and LaTeX)."""
+        """Sample an expression over a range for plotting."""
 
         try:
-            # Parse all expressions based on whether they're LaTeX
-            parsed_expr = parse_expression(expression, is_latex, [variable])
-            start_expr = parse_expression(start, is_latex, [variable])
-            end_expr = parse_expression(end, is_latex, [variable])
+            # Parse all expressions
+            parsed_expr = parse_expression(expression, [variable])
+            start_expr = parse_expression(start, [variable])
+            end_expr = parse_expression(end, [variable])
 
             points = await run_cpu_bound_async(
                 generate_plot_points,

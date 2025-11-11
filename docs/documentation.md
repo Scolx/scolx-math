@@ -6,24 +6,22 @@
 3. [Project Structure](#project-structure)
 4. [API Endpoints](#api-endpoints)
 5. [Core Modules](#core-modules)
-6. [LaTeX Parsing](#latex-parsing)
-7. [Usage Examples](#usage-examples)
-8. [Running the Project](#running-the-project)
-9. [Testing](#testing)
-10. [Contributing](#contributing)
-11. [Deployment](#deployment)
-12. [Plotting](#plotting)
+6. [Usage Examples](#usage-examples)
+7. [Running the Project](#running-the-project)
+8. [Testing](#testing)
+9. [Contributing](#contributing)
+10. [Deployment](#deployment)
+11. [Plotting](#plotting)
 
 ## Overview
 
-Scolx Math API is a Python-based mathematical computation service that provides step-by-step solutions to mathematical problems. It supports both plain text and LaTeX mathematical expressions, offering integration, differentiation, equation solving, simplification, limits, and series expansion capabilities.
+Scolx Math API is a Python-based mathematical computation service that provides step-by-step solutions to mathematical problems. It supports plain-text mathematical expressions, offering integration, differentiation, equation solving, simplification, limits, and series expansion capabilities.
 
 ### Key Features
 - **Mathematical Operations**: Integration, differentiation, equation solving, simplification
 - **Step-by-Step Explanations**: Detailed explanations of how mathematical problems are solved
-- **LaTeX Support**: Ability to parse and work with LaTeX mathematical expressions
 - **RESTful API**: FastAPI-based web service for mathematical computations
-- **Flexible Input**: Support for both plain text and LaTeX expressions
+- **Flexible Input**: Support for plain-text expressions
 
 ## Installation
 
@@ -60,7 +58,7 @@ Scolx Math API is a Python-based mathematical computation service that provides 
 scolx-math/
 ├── scolx_math/                 # Main package
 │   ├── __init__.py
-│   ├── advanced_latex.py       # LaTeX parsing and advanced operations
+
 │   ├── api/
 │   │   ├── __init__.py
 │   │   └── main.py             # FastAPI application and endpoints
@@ -73,7 +71,7 @@ scolx-math/
 │       └── explainers.py       # Step-by-step explanation generators
 ├── tests/                      # Test suite
 │   ├── test_api.py             # API endpoint tests
-│   ├── test_latex.py           # LaTeX functionality tests
+
 │   └── test_smoke.py           # Basic integration test
 ├── docs/                       # Documentation
 │   ├── documentation.md        # Comprehensive documentation
@@ -102,7 +100,7 @@ The main endpoint for mathematical computations. Accepts a JSON payload with the
   "point": "string",          // Point for limit operations (optional)
   "order": "int",             // Order for series expansion (default: 6)
   "steps": "bool",            // Include step-by-step explanation (default: true)
-  "is_latex": "bool",         // Whether expression is in LaTeX format (default: false)
+
   "plot_range": ["string", "string"],  // Start and end for plotting
   "samples": "int",           // Sample count for plotting (default: 100)
   "matrix": [[...]],          // Matrix input for determinant/inverse
@@ -151,11 +149,7 @@ The main endpoint for mathematical computations. Accepts a JSON payload with the
 | `normal_pdf` | Compute normal probability density function | `distribution_value`, `mean_value`, `std_value` |
 | `normal_cdf` | Compute normal cumulative distribution function | `distribution_value`, `mean_value`, `std_value` |
 | `solve_numeric` | Solve system of equations numerically | `equations`, `equation_variables` |
-| `integral_latex` | LaTeX integral | `expression`, `variable`, `is_latex: true` |
-| `derivative_latex` | LaTeX derivative | `expression`, `variable`, `is_latex: true` |
-| `solve_latex` | LaTeX equation solving | `expression`, `variable`, `is_latex: true` |
-| `limit_latex` | LaTeX limit | `expression`, `variable`, `point`, `is_latex: true` |
-| `series_latex` | LaTeX series expansion | `expression`, `variable`, `point`, `order`, `is_latex: true` |
+
 
 ### Example Requests
 
@@ -169,27 +163,7 @@ The main endpoint for mathematical computations. Accepts a JSON payload with the
 }
 ```
 
-#### Integration (LaTeX)
-```json
-{
-  "type": "integral_latex",
-  "expression": "x^2",
-  "variable": "x",
-  "steps": true,
-  "is_latex": true
-}
-```
 
-#### Equation Solving (LaTeX)
-```json
-{
-  "type": "solve_latex",
-  "expression": "x^2 - 4",
-  "variable": "x",
-  "steps": true,
-  "is_latex": true
-}
-```
 
 #### Gradient Calculation
 ```json
@@ -298,36 +272,13 @@ Provides step-by-step explanations for mathematical operations:
 
 - `integrate_with_steps(expr_str, var_str)`: Integration with explanation steps
 
-### 4. LaTeX Processing (`scolx_math/advanced_latex.py`)
 
-Handles LaTeX parsing and advanced mathematical operations:
-
-- `parse_latex_expression(latex_expr)`: Convert LaTeX to SymPy expression
-- `integrate_latex_with_steps(latex_expr, var_name)`: LaTeX integration with steps
-- `solve_equation_latex_with_steps(latex_eq, var_name)`: LaTeX equation solving with steps
-- `differentiate_latex_with_steps(latex_expr, var_name)`: LaTeX differentiation with steps
-- `limit_latex_with_steps(latex_expr, var_name, point)`: LaTeX limit calculation with steps
-- `series_latex_with_steps(latex_expr, var_name, point, order)`: LaTeX series expansion with steps
 
 ### 5. API (`scolx_math/api/main.py`)
 
 The FastAPI application that exposes the mathematical operations via REST endpoints.
 
-## LaTeX Parsing
 
-The Scolx Math API includes robust LaTeX parsing capabilities using SymPy's experimental LaTeX parser. This allows users to input mathematical expressions in LaTeX format, which are then converted to SymPy expressions for computation.
-
-### Supported LaTeX Features
-
-- Basic mathematical expressions: `x^2`, `\frac{a}{b}`, `\sqrt{x}`
-- Trigonometric functions: `\sin(x)`, `\cos(x)`, `\tan(x)`
-- Logarithmic functions: `\log(x)`, `\ln(x)`
-- Exponential functions: `e^x`, `\exp(x)`
-- Integration notation: `\int x^2 dx`
-
-### Implementation Details
-
-The LaTeX parsing functionality is implemented using `sympy.parsing.latex.parse_latex()`. Note that this module is still experimental in some SymPy versions, so results may vary depending on the complexity of the LaTeX expression.
 
 ## Usage Examples
 
@@ -337,12 +288,6 @@ The project includes example code in `examples.py`:
 
 ```python
 from scolx_math.api.main import app
-from scolx_math.advanced_latex import (
-    integrate_latex_with_steps,
-    differentiate_latex_with_steps,
-    solve_equation_latex_with_steps
-)
-
 def example_plain_text():
     """Examples using plain text mathematical expressions."""
     print("=== Plain Text Examples ===")
@@ -366,31 +311,8 @@ def example_plain_text():
     print(f"Solutions to x^2 - 4 = 0: {result}")
     print()
 
-def example_latex():
-    """Examples using LaTeX mathematical expressions."""
-    print("=== LaTeX Examples ===")
-
-    # Integration with LaTeX
-    result, steps = integrate_latex_with_steps("x^2", "x")
-    print(f"Integral of x^2 (from LaTeX): {result}")
-    print(f"Steps: {steps}")
-    print()
-
-    # Differentiation with LaTeX
-    result, steps = differentiate_latex_with_steps("x^3", "x")
-    print(f"Derivative of x^3 (from LaTeX): {result}")
-    print(f"Steps: {steps}")
-    print()
-
-    # Equation solving with LaTeX
-    result, steps = solve_equation_latex_with_steps("x^2 - 4", "x")
-    print(f"Solutions to x^2 - 4 = 0 (from LaTeX): {result}")
-    print(f"Steps: {steps}")
-    print()
-
 if __name__ == "__main__":
     example_plain_text()
-    example_latex()
     print("All examples completed successfully!")
 ```
 
@@ -448,7 +370,7 @@ pytest --cov=scolx_math
 ### Test Structure
 
 - `tests/test_api.py`: Tests for basic API endpoints and operations
-- `tests/test_latex.py`: Tests for LaTeX parsing functionality
+
 - `tests/test_smoke.py`: Basic smoke tests
 
 ## Deployment
@@ -472,7 +394,7 @@ into charting libraries.
 - `sympy`: Symbolic mathematics
 - `symengine`: Fast symbolic manipulation
 - `pydantic`: Data validation
-- `antlr4-python3-runtime==4.11`: ANTLR runtime for LaTeX parsing
+
 
 ### Development Dependencies
 - `pytest`: Testing framework

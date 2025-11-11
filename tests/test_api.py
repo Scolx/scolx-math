@@ -48,6 +48,20 @@ def test_solve_endpoint_derivative() -> None:
     assert data["result"] == "3*x**2"
 
 
+def test_derivative_endpoint_no_steps() -> None:
+    response = _post(
+        {
+            "type": "derivative",
+            "expression": "(x**2 + 1)",
+            "variable": "x",
+            "steps": False,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["result"] == "2*x"
+
+
 def test_solve_endpoint_solve() -> None:
     """Test equation solving."""
     response = _post(
@@ -225,6 +239,22 @@ def test_plain_limit_not_implemented() -> None:
     assert data["result"] == "1"
 
 
+def test_series_endpoint_plain() -> None:
+    response = _post(
+        {
+            "type": "series",
+            "expression": "exp(x)",
+            "variable": "x",
+            "point": "0",
+            "order": 5,
+            "steps": True,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "result" in data
+
+
 def test_missing_variable_validation_error() -> None:
     response = _post({"type": "integral", "expression": "x**2"})
     assert response.status_code == 422
@@ -235,13 +265,12 @@ def test_missing_variable_validation_error() -> None:
     )
 
 
-def test_integration_with_latex() -> None:
+def test_integration_plain_alias() -> None:
     response = _post(
         {
             "type": "integral",
-            "expression": "x^2",
+            "expression": "x**2",
             "variable": "x",
-            "is_latex": True,
         },
     )
     assert response.status_code == 200
@@ -252,13 +281,12 @@ def test_integration_with_latex() -> None:
     assert "x**3/3" in data["result"] or "x^3/3" in data["result"]
 
 
-def test_differentiation_with_latex() -> None:
+def test_differentiation_plain_alias() -> None:
     response = _post(
         {
             "type": "derivative",
-            "expression": "x^3",
+            "expression": "x**3",
             "variable": "x",
-            "is_latex": True,
         },
     )
     assert response.status_code == 200
@@ -269,13 +297,12 @@ def test_differentiation_with_latex() -> None:
     assert "3*x**2" in data["result"] or "3*x^2" in data["result"]
 
 
-def test_solve_with_latex() -> None:
+def test_solve_plain_alias() -> None:
     response = _post(
         {
             "type": "solve",
-            "expression": "x^2 - 4",
+            "expression": "x**2 - 4",
             "variable": "x",
-            "is_latex": True,
         },
     )
     assert response.status_code == 200
@@ -285,14 +312,13 @@ def test_solve_with_latex() -> None:
     assert "-2" in data["result"]
 
 
-def test_limit_with_latex() -> None:
+def test_limit_plain_alias() -> None:
     response = _post(
         {
             "type": "limit",
-            "expression": "\\frac{\\sin(x)}{x}",
+            "expression": "sin(x)/x",
             "variable": "x",
             "point": "0",
-            "is_latex": True,
         },
     )
     assert response.status_code == 200

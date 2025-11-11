@@ -34,7 +34,7 @@ _LATEX_REGEX_REPLACEMENTS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\\left\s*"), ""),
     (re.compile(r"\\right\s*"), ""),
     (re.compile(r"\\mathrm\{\s*([A-Za-z])\s*\}"), r"\1"),
-    # Preserve LaTeX function by adding a backslash: \operatorname{sin} -> \sin
+    #Preserve LaTeX function by adding a backslash: \operatorname{sin} -> \sin
     (re.compile(r"\\operatorname\{\s*([A-Za-z0-9_]+)\s*\}"), r"\\\\\1"),
 )
 

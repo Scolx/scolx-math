@@ -64,3 +64,4 @@ build:image:
     - if: $CI_PIPELINE_SOURCE == "push"
       changes:
         - scolx_math/**
+        - Dockerfile

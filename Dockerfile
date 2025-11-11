@@ -27,7 +27,8 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Copy only the installed packages and app code from builder
+# Copy only the installed packages, scripts, and app code from builder
+COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
 COPY --from=builder /app/scolx_math ./scolx_math
 COPY --from=builder /app/pyproject.toml ./pyproject.toml

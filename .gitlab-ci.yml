@@ -1,11 +1,19 @@
+image: python:3.14
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+  GIT_DEPTH: "0"
+
 stages:
   - lint
   - test
   - build
+  - build-sonar
 
-variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-
+# -------------------------
+# Python template
+# -------------------------
 .python_job_template:
   image: python:3.14
   before_script:
@@ -19,6 +27,9 @@ variables:
       - .cache/pip
     policy: pull-push
 
+# -------------------------
+# Lint job
+# -------------------------
 lint:
   stage: lint
   extends: .python_job_template
@@ -28,6 +39,9 @@ lint:
     - if: $CI_PIPELINE_SOURCE == "push"
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
+# -------------------------
+# Test job
+# -------------------------
 test:
   stage: test
   extends: .python_job_template
@@ -38,7 +52,7 @@ test:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 # -------------------------
-# Build and push images
+# Docker build
 # -------------------------
 .build_docker_common:
   image: docker:28.0.4
@@ -65,3 +79,26 @@ build:image:
       changes:
         - scolx_math/**
         - Dockerfile
+
+# -------------------------
+# SonarQube analysis
+# -------------------------
+build-sonar:
+  image:
+    name: sonarsource/sonar-scanner-cli:11
+    entrypoint: [""]
+  stage: build-sonar
+  cache:
+    policy: pull-push
+    key: "sonar-cache-$CI_COMMIT_REF_SLUG"
+    paths:
+      - "${SONAR_USER_HOME}/cache"
+      - sonar-scanner/
+  script:
+    - sonar-scanner -Dsonar.host.url="${SONAR_HOST_URL}"
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH == 'master'
+    - if: $CI_COMMIT_BRANCH == 'main'
+    - if: $CI_COMMIT_BRANCH == 'develop'
